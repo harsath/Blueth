@@ -1,0 +1,9 @@
+This dir contains 3rd-party software.
+	[1] Google Test:
+		Googletest is a testing framework developed by the Testing Technology team with Google
+		Commit Hash: 703bd9caab50b139428cea1aaff9974ebee5742e
+		License type: BSD 3-Clause "New" or "Revised" License
+		Project URL: https://github.com/google/googletest
+		Copyright: Copyright 2007, Google Inc.
+		Release data: 3 Oct 2019
+
