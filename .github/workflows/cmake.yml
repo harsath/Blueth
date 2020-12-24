@@ -35,8 +35,20 @@ jobs:
                         - name: Configuring and Build
                           shell: bash
                           run: |
-                                BUILD_AND_TEST_SCRIPT="makeprg_build.sh"
-                                TEST_SCRIPT="run_test.sh"
-                                chmod +x ./${BUILD_AND_TEST_SCRIPT}
-                                chmod +x ./${TEST_SCRIPT}
-                                ./${BUILD_AND_TEST_SCRIPT}
+                                if ! [[ -d "build" ]]; then
+                                        BUILD_AND_TEST_SCRIPT="makeprg_build.sh"
+                                        TEST_SCRIPT="run_test.sh"
+                                        mkdir build && cd build
+                                        cp ../ci/${BUILD_AND_TEST_SCRIPT} .
+                                        cp ../ci/${TEST_SCRIPT} .
+                                        chmod +x ./${BUILD_AND_TEST_SCRIPT}
+                                        chmod +x ./${TEST_SCRIPT}
+                                        ./${BUILD_AND_TEST_SCRIPT}
+                                else
+                                        BUILD_AND_TEST_SCRIPT="makeprg_build.sh"
+                                        TEST_SCRIPT="run_test.sh"
+                                        chmod +x ./${BUILD_AND_TEST_SCRIPT}
+                                        chmod +x ./${TEST_SCRIPT}
+                                        cd build && rm -rf *
+                                        ./${BUILD_AND_TEST_SCRIPT}
+                                fi
