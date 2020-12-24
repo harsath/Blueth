@@ -1,5 +1,3 @@
 build/
 .clangd/
-run_test.sh
-makeprg_build.sh
 compile_commands.json
