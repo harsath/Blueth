@@ -12,7 +12,7 @@ set(EXEC_FILE ./main.cpp)
 
 enable_testing()
 
-add_subdirectory(./vendor/googletest-release-1.10.0)
+add_subdirectory(./vendor/googletest)
 add_subdirectory(./blueth)
 add_subdirectory(./tests)
 

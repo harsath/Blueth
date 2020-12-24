@@ -8,9 +8,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(TEST_CONTAINER_EXEC_NAME test_container)
+include_directories(../../blueth/containers)
 set(
 	TEST_CONTAINER_SOURCE_FILES
 	./test-matrix.cpp
+	./test-vector.cpp
 	)
 add_executable(
 	${TEST_CONTAINER_EXEC_NAME}
@@ -18,6 +20,7 @@ add_executable(
 	)
 target_link_libraries(
 	${TEST_CONTAINER_EXEC_NAME}
+	gtest
 	gtest_main
 	libblueth
 	pthread

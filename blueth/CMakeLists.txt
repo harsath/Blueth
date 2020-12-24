@@ -1,10 +1,14 @@
 set(LIB_NAME libblueth)
-add_subdirectory(./containers)
 set(
 	CONTAINER_DIR_FILES
-	./containers/matrix.h
+	./containers/matrix.hpp
+	./containers/vector.hpp
 	)
 add_library(
 	${LIB_NAME} 
 	STATIC ${CONTAINER_DIR_FILES}
+	)
+set_target_properties(
+	${LIB_NAME}
+	PROPERTIES LINKER_LANGUAGE CXX
 	)
