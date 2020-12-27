@@ -4,9 +4,15 @@ set(
 	./containers/matrix.hpp
 	./containers/vector.hpp
 	)
+set(
+	NET_DIR_FILES
+	./net/TcpEndpoint.hpp
+	./net/TransportHelpers.hpp
+	)
 add_library(
 	${LIB_NAME} 
 	STATIC ${CONTAINER_DIR_FILES}
+	${NET_DIR_FILES}
 	)
 set_target_properties(
 	${LIB_NAME}
