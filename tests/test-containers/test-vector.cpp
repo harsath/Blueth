@@ -100,4 +100,18 @@ TEST(TestVector, ContainerTest){
 		ASSERT_EQ(foo.begin(), &foo.at(0));
 		ASSERT_EQ(foo.end(), &foo.at(foo.size()-1));
 	}
+
+	{
+		container::vector<std::string> foo;
+		foo.emplace_back("Hello");
+		foo.emplace_back("World");
+		std::string temp{"FooBar"};
+		foo.emplace_back(temp);
+		ASSERT_EQ(foo.size(), 3);
+		ASSERT_EQ(foo.capacity(), 4);
+		foo.emplace_back("barFoo");
+		foo.emplace_back("fobaor");
+		ASSERT_EQ(foo.size(), 5);
+		ASSERT_EQ(foo.capacity(), 8);
+	}
 }

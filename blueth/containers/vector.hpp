@@ -1,7 +1,9 @@
 #pragma once
+#include <exception>
 #include <initializer_list>
 #include <iostream>
 #include <memory>
+#include <utility>
 namespace blueth{
 namespace container{
 	template<typename T> class vector{
@@ -12,6 +14,8 @@ namespace container{
 			// Adds end of list
 			void push_back(const T& item);
 			void push_back(T&&);
+			template<typename... Args> 
+			void emplace_back(Args&&... args);
 			// removes item end of list
 			void pop_back();
 			// returns the object at the end of list
@@ -82,6 +86,22 @@ namespace container{
 			try{
 				this->m_reserve(this->m_capacity * 2);
 				*(object + this->m_size) = std::move(item);
+				this->m_size++;
+			}catch(const std::exception& exceptions){
+				throw exceptions.what();
+			}
+		}
+	}
+	template<typename T>
+	template<typename... Args>
+	inline void vector<T>::emplace_back(Args&&... args){
+		if(this->m_capacity > this->m_size){
+			::new(this->object + ((this->m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
+			this->m_size++;
+		}else{
+			try{
+				this->m_reserve(this->m_capacity * 2);
+				::new(this->object + ((this->m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
 				this->m_size++;
 			}catch(const std::exception& exceptions){
 				throw exceptions.what();
