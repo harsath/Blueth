@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <utility>
 namespace blueth{
 namespace container{
@@ -69,13 +70,9 @@ namespace container{
 			*(object + this->m_size) = item;
 			this->m_size++;
 		}else{
-			try{
-				this->m_reserve(this->m_capacity * 2);
-				*(object + this->m_size) = item;
-				this->m_size++;
-			}catch(std::exception exceptions){
-				throw exceptions.what();
-			}
+			this->m_reserve(this->m_capacity * 2);
+			*(object + this->m_size) = item;
+			this->m_size++;
 		}
 	}
 	template<typename T> inline void vector<T>::push_back(T&& item){
@@ -83,13 +80,9 @@ namespace container{
 			*(object + this->m_size) = std::move(item);
 			this->m_size++;
 		}else{
-			try{
-				this->m_reserve(this->m_capacity * 2);
-				*(object + this->m_size) = std::move(item);
-				this->m_size++;
-			}catch(const std::exception& exceptions){
-				throw exceptions.what();
-			}
+			this->m_reserve(this->m_capacity * 2);
+			*(object + this->m_size) = std::move(item);
+			this->m_size++;
 		}
 	}
 	template<typename T>
@@ -99,20 +92,16 @@ namespace container{
 			::new(this->object + ((this->m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
 			this->m_size++;
 		}else{
-			try{
-				this->m_reserve(this->m_capacity * 2);
-				::new(this->object + ((this->m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
-				this->m_size++;
-			}catch(const std::exception& exceptions){
-				throw exceptions.what();
-			}
+			this->m_reserve(this->m_capacity * 2);
+			::new(this->object + ((this->m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
+			this->m_size++;
 		}
 	}
 	template<typename T> inline T& vector<T>::at(std::size_t index){
 		if(this->m_size > index){
 			return *(object + index);
 		}else{
-			throw "operator[] out of bound";
+			throw std::out_of_range("operator[] out of bound");
 		}
 	}
 	template<typename T> inline vector<T>::vector(const std::initializer_list<T>& init_list)
@@ -134,7 +123,7 @@ namespace container{
 		if(this->m_size > index){
 			return *(object + index);
 		}else{
-			throw "operator[] out of bound";
+			throw std::out_of_range("operator[] out of bound");
 		}
 	}
 	// Copy constructor for vector<T>
@@ -162,7 +151,8 @@ namespace container{
 				this->object[index] = rhs.object[index];
 	}
 	template<typename T> inline vector<T>::~vector<T>(){
-		delete[] this->object;
+		if(this->object)
+		{ delete[] this->object; }
 	}
 	template<typename T> inline vector<T>::vector(vector&& move_rhs)
 		: m_capacity(move_rhs.m_capacity), m_size(move_rhs.m_size){
@@ -177,7 +167,7 @@ namespace container{
 			this->m_reserve(this->m_capacity);
 		}else{
 			for(std::size_t index{size}; index < this->m_size; index++)
-				std::destroy_at((object + index+1));
+				std::destroy_at(object + index+1);
 			this->m_size = size;
 			this->m_capacity = size;
 		}
@@ -191,21 +181,22 @@ namespace container{
 			this->object = new_tmp;
 			this->m_capacity = allocation_size;
 		}else{
-			throw "Memory error, but items preserved";
+			delete[] new_tmp;
+			throw std::bad_alloc();
 		}
 	}
 	template<typename T> inline const T& vector<T>::front() const {
 		if(this->m_size > 0){
 			return *(object);
 		}else{
-			throw "calling fount() on empty container";
+			throw std::logic_error("calling fount() on empty container");
 		}
 	}
 	template<typename T> inline const T& vector<T>::back() const {
 		if(this->m_size > 0){
 			return *(object + (m_size-1));
 		}else{
-			throw "calling back() in an empty container";
+			throw std::logic_error("calling back() in an empty container");
 		}
 	}
 	template<typename T> inline void vector<T>::pop_back(){
@@ -213,7 +204,7 @@ namespace container{
 			std::destroy_at(object + (this->m_size-1));
 			this->m_size--;
 		}else{
-			throw "calling pop_back() on empty container";
+			throw std::out_of_range("calling pop_back() on empty container");
 		}
 	}
 	template<typename T> inline typename vector<T>::iterator vector<T>::begin() noexcept {
