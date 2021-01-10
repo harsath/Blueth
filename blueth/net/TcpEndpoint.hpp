@@ -1,4 +1,6 @@
 #pragma once
+#include <fcntl.h>
+#include <stdexcept>
 #include <string>
 #include <arpa/inet.h>
 #include <asm-generic/socket.h>
@@ -60,6 +62,7 @@ namespace Transport{
 			void read_buff(char* read_buffer, std::size_t max_read_buff);
 	 		void write_buff(const char* write_buffer, std::size_t write_size);
 			void bind_sock() noexcept;
+			void make_socket_nonblocking(void);
 			void close_serving_client_connection(void) noexcept;
 			std::string get_serving_client_ip() noexcept;
 
@@ -164,6 +167,14 @@ namespace Transport{
 	}
 	inline std::string TCPEndpoint::get_serving_client_ip() noexcept{
 		return ::inet_ntoa(this->_client_sockaddr.sin_addr);
+	}
+	inline void TCPEndpoint::make_socket_nonblocking(){
+		int flags = ::fcntl(this->_endpoint_fd, F_GETFL, 0); 
+		if(flags == -1)
+		{ throw std::runtime_error("fnctl() F_GETFL"); }
+		int ret = ::fcntl(this->_endpoint_fd, F_SETFL, flags | O_NONBLOCK);
+		if(ret == -1)
+		{ throw std::runtime_error("fnctl() O_NONBLOCK"); }
 	}
 	inline TCPEndpoint::~TCPEndpoint(){
 		::close(this->_endpoint_fd);
