@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <memory>
+#include <new>
 #include <stdexcept>
 #include <utility>
 namespace blueth{
@@ -15,6 +16,8 @@ namespace container{
 			// Adds end of list
 			void push_back(const T& item);
 			void push_back(T&&);
+			// push_front is EXTREMELY inefficient, Do not use it
+			void push_front(const T& item);
 			template<typename... Args> 
 			void emplace_back(Args&&... args);
 			// removes item end of list
@@ -83,6 +86,36 @@ namespace container{
 			this->m_reserve(this->m_capacity * 2);
 			*(object + this->m_size) = std::move(item);
 			this->m_size++;
+		}
+	}
+	template<typename T> inline void vector<T>::push_front(const T& item){
+		if(this->m_capacity > this->m_size){
+			T* tmp_store = ::new(std::nothrow) T[this->m_capacity];
+			if(tmp_store != nullptr){
+				*tmp_store = item;
+				for(std::size_t index{1}; index < this->m_size; index++)
+					*(tmp_store + index) = *(this->object + (this->m_size-1));
+				delete[] this->object;
+				this->object = tmp_store;
+				this->m_size++;
+			}else{
+				delete[] tmp_store;
+				throw std::bad_alloc{};
+			}
+		}else{
+			this->m_capacity = this->m_capacity * 2;
+			T* tmp_store = ::new(std::nothrow) T[this->m_capacity];
+			if(tmp_store != nullptr){
+				*tmp_store = item;
+				for(std::size_t index{1}; index < this->m_size; index++)
+					*(tmp_store + index) = *(this->object + (this->m_size-1));
+				delete[] this->object;
+				this->object = tmp_store;
+				this->m_size++;
+			}else{
+				delete[] tmp_store;
+				throw std::bad_alloc{};
+			}
 		}
 	}
 	template<typename T>

@@ -114,4 +114,19 @@ TEST(TestVector, ContainerTest){
 		ASSERT_EQ(foo.size(), 5);
 		ASSERT_EQ(foo.capacity(), 8);
 	}
+
+	{
+		container::vector<std::size_t> foo;
+		foo.push_back(1);
+		foo.push_back(2);
+		foo.push_back(3);
+		ASSERT_EQ(foo.size(), 3);
+		ASSERT_EQ(foo.front(), 1);
+		foo.push_front(100);
+		ASSERT_EQ(foo.size(), 4);
+		ASSERT_EQ(foo.front(), 100);
+		foo.push_front(200);
+		ASSERT_EQ(foo.size(), 5);
+		ASSERT_EQ(foo.front(), 200);
+	}
 }

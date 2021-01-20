@@ -5,11 +5,11 @@
 #include <string>
 
 namespace blueth::container{
-
 	template<typename T, std::size_t buffer_size> class StackArray{
 		private:
 			T* _internal_stack_buffer{nullptr};
-			std::size_t _buffer_size;
+			std::size_t _size;
+			std::size_t _curr_capacity;
 		public:
 			explicit StackArray<T, buffer_size>();
 			StackArray<T, buffer_size>(const StackArray<T, buffer_size>&) = delete;
@@ -28,7 +28,7 @@ namespace blueth::container{
 			T* _stack_allocator();
 	};
 	template<typename T, std::size_t buffer_size> inline StackArray<T, buffer_size>::StackArray()
-		: _buffer_size{buffer_size} {
+		{
 			this->_internal_stack_buffer = this->_stack_allocator();
 		}
 	template<typename T, std::size_t buffer_size> inline StackArray<T, buffer_size>::StackArray(StackArray<T, buffer_size>&& mover_array){
@@ -43,15 +43,15 @@ namespace blueth::container{
 		return _internal_stack_buffer;
 	}
 	template<typename T, std::size_t buffer_size> inline std::size_t StackArray<T, buffer_size>::size() noexcept {
-		return _buffer_size;
+		return this->_size;
 	}
 	template<typename T, size_t buffer_size> inline typename StackArray<T, buffer_size>::iterator 
 	StackArray<T, buffer_size>::begin() noexcept {
-		return _internal_stack_buffer;		
+		return this->_internal_stack_buffer;		
 	}
 	template<typename T, size_t buffer_size> inline typename StackArray<T, buffer_size>::iterator 
 	StackArray<T, buffer_size>::end() noexcept {
-		return (_internal_stack_buffer + _buffer_size);		
+		return (_internal_stack_buffer + _size);		
 	}
 	template<typename T, size_t buffer_size> inline typename StackArray<T, buffer_size>::const_iterator
 	StackArray<T, buffer_size>::cbegin() const noexcept {
@@ -59,14 +59,14 @@ namespace blueth::container{
 	}
 	template<typename T, size_t buffer_size> inline typename StackArray<T, buffer_size>::const_iterator
 	StackArray<T, buffer_size>::cend() const noexcept {
-		return (_internal_stack_buffer + _buffer_size);		
+		return (_internal_stack_buffer + _size);		
 	}
 	template<typename T, std::size_t buffer_size> inline T* StackArray<T, buffer_size>::_stack_allocator(){
 		return new(static_cast<T*>(alloca(sizeof(T) * buffer_size))) T[buffer_size];
 	}
 	template<typename T, std::size_t buffer_size> inline StackArray<T, buffer_size>::~StackArray(){
-		if(_internal_stack_buffer != nullptr && _buffer_size != 0)
-			std::destroy(_internal_stack_buffer, _internal_stack_buffer+_buffer_size);
+		if(_internal_stack_buffer != nullptr && _size != 0)
+			std::destroy(_internal_stack_buffer, _internal_stack_buffer+_size);
 	}
 
 } // end namespace blueth::container
