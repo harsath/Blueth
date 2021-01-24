@@ -51,19 +51,19 @@ namespace Transport{
 			TCPEndpoint() = default;
 			TCPEndpoint& operator=(TCPEndpoint&&);
 			void SetSocketOption(SockOptLevel sock_level, SocketOptions sock_opt) noexcept;
-			const std::string& get_ip(void) const noexcept;
-			const std::uint16_t& get_port(void) const noexcept;
-			const int get_endpoint_backlog(void) const noexcept;
-			const Domain get_socket_domain(void) const noexcept;
-			const int get_endpoint_fd(void) const noexcept;
-			const int get_serving_client(void) const noexcept;
+			const std::string& get_ip() const noexcept;
+			const std::uint16_t& get_port() const noexcept;
+			const int get_endpoint_backlog() const noexcept;
+			const Domain get_socket_domain() const noexcept;
+			const int get_endpoint_fd() const noexcept;
+			const int get_serving_client() const noexcept;
 			const int accept_loop();
 			// Possable we can replace `char*` with an implementation of a BufferRead object in future
 			void read_buff(char* read_buffer, std::size_t max_read_buff);
 	 		void write_buff(const char* write_buffer, std::size_t write_size);
 			void bind_sock() noexcept;
-			void make_socket_nonblocking(void);
-			void close_serving_client_connection(void) noexcept;
+			void make_socket_nonblocking();
+			void close_serving_client_connection() noexcept;
 			std::string get_serving_client_ip() noexcept;
 
 			~TCPEndpoint();
@@ -72,33 +72,33 @@ namespace Transport{
 			void m_listen_socket();
 	};
 	inline TCPEndpoint& TCPEndpoint::operator=(TCPEndpoint&& tcp_endpoint){
-		this->_IP_addr = std::move(tcp_endpoint._IP_addr);
-		this->_port = tcp_endpoint._port; tcp_endpoint._port = -1;
-		this->_endpoint_backlog = tcp_endpoint._endpoint_backlog; tcp_endpoint._endpoint_backlog = -1;
-		this->_transport_type = tcp_endpoint._transport_type; tcp_endpoint._transport_type = static_cast<TransportType>(-1);
-		this->_domain = tcp_endpoint._domain; tcp_endpoint._domain = static_cast<Domain>(-1);
-		this->_endpoint_fd = tcp_endpoint._endpoint_fd; tcp_endpoint._endpoint_fd = -1;
-		this->_sock_type = tcp_endpoint._sock_type; tcp_endpoint._sock_type = static_cast<SockType>(-1);
-		this->_serving_client_fd = tcp_endpoint._serving_client_fd; tcp_endpoint._serving_client_fd = -1;
-		this->_client_sockaddr = tcp_endpoint._client_sockaddr;
-		this->_server_sockaddr = tcp_endpoint._server_sockaddr;
-		this->_endpoint_sock_len = tcp_endpoint._endpoint_sock_len; tcp_endpoint._endpoint_sock_len = -1;
-		this->m_create_socket();
+		std::swap(_IP_addr, tcp_endpoint._IP_addr);
+		std::swap(_port, tcp_endpoint._port);
+		std::swap(_endpoint_backlog, tcp_endpoint._endpoint_backlog);
+		std::swap(_transport_type, tcp_endpoint._transport_type);
+		std::swap(_domain, tcp_endpoint._domain);
+		std::swap(_endpoint_fd, tcp_endpoint._endpoint_fd);
+		std::swap(_sock_type, tcp_endpoint._sock_type);
+		std::swap(_serving_client_fd, tcp_endpoint._serving_client_fd);
+		std::swap(_client_sockaddr, tcp_endpoint._client_sockaddr);
+		std::swap(_server_sockaddr, tcp_endpoint._server_sockaddr);
+		std::swap(_endpoint_sock_len, tcp_endpoint._endpoint_sock_len);
+		m_create_socket();
 		return *this;
 	}
 	inline TCPEndpoint::TCPEndpoint(TCPEndpoint&& tcp_endpoint){
-		this->_IP_addr = std::move(tcp_endpoint._IP_addr);
-		this->_port = tcp_endpoint._port; tcp_endpoint._port = -1;
-		this->_endpoint_backlog = tcp_endpoint._endpoint_backlog; tcp_endpoint._endpoint_backlog = -1;
-		this->_transport_type = tcp_endpoint._transport_type; tcp_endpoint._transport_type = static_cast<TransportType>(-1);
-		this->_domain = tcp_endpoint._domain; tcp_endpoint._domain = static_cast<Domain>(-1);
-		this->_endpoint_fd = tcp_endpoint._endpoint_fd; tcp_endpoint._endpoint_fd = -1;
-		this->_sock_type = tcp_endpoint._sock_type; tcp_endpoint._sock_type = static_cast<SockType>(-1);
-		this->_serving_client_fd = tcp_endpoint._serving_client_fd; tcp_endpoint._serving_client_fd = -1;
-		this->_client_sockaddr = tcp_endpoint._client_sockaddr;
-		this->_server_sockaddr = tcp_endpoint._server_sockaddr;
-		this->_endpoint_sock_len = tcp_endpoint._endpoint_sock_len; tcp_endpoint._endpoint_sock_len = -1;
-		this->m_create_socket();
+		std::swap(_IP_addr, tcp_endpoint._IP_addr);
+		std::swap(_port, tcp_endpoint._port);
+		std::swap(_endpoint_backlog, tcp_endpoint._endpoint_backlog);
+		std::swap(_transport_type, tcp_endpoint._transport_type);
+		std::swap(_domain, tcp_endpoint._domain);
+		std::swap(_endpoint_fd, tcp_endpoint._endpoint_fd);
+		std::swap(_sock_type, tcp_endpoint._sock_type);
+		std::swap(_serving_client_fd, tcp_endpoint._serving_client_fd);
+		std::swap(_client_sockaddr, tcp_endpoint._client_sockaddr);
+		std::swap(_server_sockaddr, tcp_endpoint._server_sockaddr);
+		std::swap(_endpoint_sock_len, tcp_endpoint._endpoint_sock_len);
+		m_create_socket();
 	}
 	inline void TCPEndpoint::m_listen_socket(){
 		int ret_code = ::listen(this->_endpoint_fd, this->_endpoint_backlog);
@@ -144,25 +144,25 @@ namespace Transport{
 	inline void TCPEndpoint::write_buff(const char* write_buffer, std::size_t write_size){
 		write_data(this->_serving_client_fd, write_buffer, write_size, 0);
 	}
-	inline const int TCPEndpoint::get_serving_client(void) const noexcept {
+	inline const int TCPEndpoint::get_serving_client() const noexcept {
 		return this->_serving_client_fd;
 	}
-	inline const std::string& TCPEndpoint::get_ip(void) const noexcept {
+	inline const std::string& TCPEndpoint::get_ip() const noexcept {
 		return this->_IP_addr;
 	}
-	inline const std::uint16_t& TCPEndpoint::get_port(void) const noexcept {
+	inline const std::uint16_t& TCPEndpoint::get_port() const noexcept {
 		return this->_port;
 	}
-	inline const int TCPEndpoint::get_endpoint_backlog(void) const noexcept {
+	inline const int TCPEndpoint::get_endpoint_backlog() const noexcept {
 		return this->_endpoint_backlog;
 	}
-	inline const Domain TCPEndpoint::get_socket_domain(void) const noexcept {
+	inline const Domain TCPEndpoint::get_socket_domain() const noexcept {
 		return this->_domain;
 	}
-	inline const int TCPEndpoint::get_endpoint_fd(void) const noexcept {
+	inline const int TCPEndpoint::get_endpoint_fd() const noexcept {
 		return this->_endpoint_fd;
 	}
-	inline void TCPEndpoint::close_serving_client_connection(void) noexcept {
+	inline void TCPEndpoint::close_serving_client_connection() noexcept {
 		::close(this->_serving_client_fd);
 	}
 	inline std::string TCPEndpoint::get_serving_client_ip() noexcept{
