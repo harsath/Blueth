@@ -1,7 +1,11 @@
 #pragma once
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <exception>
 #include <memory>
 #include <type_traits>
+#include <utility>
 
 /* IOBuffer is a small abstraction over raw uint8_t bytes internally used for Async state recorder & handlers
  * It manages a uint8_t bytes and keepts track of used offsets within the memory
@@ -11,7 +15,7 @@
  *           |                     |
  *           v                     v
  *    +------+---------------------+------------+          (buffer_end - buffer_start) = capacity of underlying memory
- *    | [1]  |        Data         |   Un-Init  |           [1] => Already *sent* bytes through Non-blocking socket
+ *    | [1]  |        Data         |   Un-Init  |           [1] => Already *sent* bytes through Non-blocking socket(headroom)
  *    +------+---------------------+------------+
  *    ^                                         ^
  *    |                                         |
@@ -45,7 +49,7 @@ template<typename T> struct is_byte_type : std::false_type {};
 template<> struct is_byte_type<char> : std::true_type {};
 template<> struct is_byte_type<std::uint8_t> : std::true_type {};
 
-template<typename T=std::uint8_t, std::enable_if_t<is_byte_type<T>::value, bool> = true>
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> = true>
 class IOBuffer {
 	public:
 	  using value_type 		= typename IOBufTraits<T>::value_type;
@@ -64,8 +68,9 @@ class IOBuffer {
 	   */
 	  static std::unique_ptr<IOBuffer<T>> create(size_type capacity);
 	  IOBuffer(size_type capacity);
-	  IOBuffer(IOBuffer&& io_buffer);
-	  IOBuffer& operator=(IOBuffer&& io_buffer);
+	  ~IOBuffer();
+	  constexpr IOBuffer(IOBuffer&& io_buffer) noexcept ;
+	  constexpr IOBuffer& operator=(IOBuffer&& io_buffer) noexcept ;
 	  IOBuffer(const IOBuffer&) = delete;
 	  IOBuffer& operator=(const IOBuffer&) = delete;
 	  /**
@@ -83,25 +88,34 @@ class IOBuffer {
 	  constexpr void setEndOffset(int offset_len) noexcept;
 	  constexpr size_type getEndOffset() const noexcept;
 	  /**
-	   * Get a particular offset of bytes from the actual operational data of the buffer
+	   * Get an arbitary offset of bytes from the actual operational data of the buffer
 	   *
 	   * @param start_offset Offset to start from
 	   * @param end_offset offset to end
+	   * @return <Begin Pointer, End Pointer>
 	   */
-	  constexpr pointer_type getOffset(size_type start_offset, size_type end_offset) const noexcept;
+	  constexpr std::pair<pointer_type, pointer_type> 
+		  getOffset(size_type start_offset, size_type end_offset) const noexcept;
+	  /**
+	   * Get offset from start_offset to offset_len and return pointer_type
+	   *
+	   * @param offset_len End offset of bytes(from start_offset_)
+	   */
+	  constexpr std::pair<pointer_type, pointer_type> 
+		  getOffset(size_type offset_len) const noexcept;
 	  /**
 	   * Append raw bytes to end of data offset on the buffer
 	   *
 	   * @param bytes Raw data to be appended
 	   * @param size Size of bytes to be appended
 	   */
-	  constexpr void appendRawBytes(pointer_type data, size_type size);
+	  constexpr void appendRawBytes(pointer_type data, size_type size) noexcept(false);
 	  /**
 	   * Append data bytes form other IOBuffer into current buffer
 	   *
 	   * @param io_buffer Source IOBuffer object
 	   */
-	  constexpr void appendRawBytes(const IOBufTraits<std::uint8_t>& io_buffer) noexcept;
+	  constexpr void appendRawBytes(const IOBuffer<value_type>& io_buffer) noexcept(false);
 	  /**
 	   * Clear the buffer
 	   */
@@ -135,7 +149,7 @@ class IOBuffer {
 	   */
 	  constexpr size_type headroom() const noexcept;
 	  /**
-	   * Get amount of memory/space left before we need ran our and allocate
+	   * Get amount of memory/space left before we need ran our and allocate (capacity - end_offset)
 	   */
 	  constexpr size_type getAvailableSpace() const noexcept;
 	  /**
@@ -145,7 +159,7 @@ class IOBuffer {
 	  /**
 	   * Convenience function to destroy/deallocate a buffer(calls the Dtor)
 	   */
-	  static void destroy(std::unique_ptr<IOBufTraits<T>> io_buffer);
+	  static void destroy(std::unique_ptr<IOBuffer<T>> io_buffer);
 	  constexpr iterator begin() noexcept;
 	  constexpr iterator end() noexcept;
 	  constexpr const_iterator cbegin() const noexcept;
@@ -157,15 +171,197 @@ class IOBuffer {
 	   * @param mem_size Num bytes to be allocated
 	   * Internally implemented as `capacity = 2*capacity;`
 	   */
-	  void reserve(size_type mem_size) noexcept(false);
+	  void reserve(size_type mem_size = capacity_*2) noexcept(false);
 	private:
-	  pointer_type internal_buffer_;
-	  size_type start_offset_;
-	  size_type end_offset_;
+	  pointer_type internal_buffer_{nullptr};
+	  size_type start_offset_{};
+	  size_type end_offset_{};
+	  static size_type capacity_{};
 };
 
-// TODO: implementation
-template<>
-inline std::unique_ptr<IOBuffer<>> IOBuffer<>::create(size_type capacity){}
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline std::unique_ptr<IOBuffer<T>> IOBuffer<T, U>::create(typename IOBufTraits<T>::size_type capacity){
+	return std::make_unique<IOBuffer<T>>(capacity);
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline IOBuffer<T, U>::IOBuffer(typename IOBufTraits<T>::size_type capacity){
+	reserve(capacity);
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr IOBuffer<T, U>::IOBuffer(IOBuffer<T, U>&& io_buffer) noexcept {
+	std::swap(internal_buffer_, io_buffer.internal_buffer_);
+	std::swap(start_offset_,io_buffer.start_offset_);
+	std::swap(end_offset_, io_buffer.end_offset_);
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr IOBuffer<T, U>& IOBuffer<T, U>::operator=(IOBuffer<T, U>&& io_buffer) noexcept {
+	if(!internal_buffer_){
+		std::swap(internal_buffer_, io_buffer.internal_buffer_);
+		std::swap(start_offset_,io_buffer.start_offset_);
+		std::swap(end_offset_, io_buffer.end_offset_);
+	}
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline void IOBuffer<T, U>::reserve(typename IOBufTraits<T>::size_type mem_size) noexcept(false) {
+	typename IOBufTraits<T>::pointer_type tmp_ptr = ::realloc(internal_buffer_, mem_size);	
+	if(tmp_ptr == nullptr){ 
+		free(tmp_ptr);
+		throw std::bad_alloc{};
+	}
+	internal_buffer_ = tmp_ptr;
+	capacity_ = mem_size;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getStartOffset() const noexcept {
+	return start_offset_;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr void IOBuffer<T, U>::clear() noexcept {
+	// Next time we do any write operation, we "overwrite" the previous bytes
+	start_offset_ = 0;
+	end_offset_ = 0;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getEndOffset() const noexcept {
+	return end_offset_;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr void IOBuffer<T, U>::setStartOffset(int offset_len) noexcept {
+	start_offset_ += offset_len;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline void IOBuffer<T, U>::free() noexcept {
+	::free(internal_buffer_);
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getDataSize() const noexcept {
+	return end_offset_ - start_offset_;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline void IOBuffer<T, U>::destroy(std::unique_ptr<IOBuffer<T>> io_buffer){
+	io_buffer->~IOBuffer();
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline IOBuffer<T, U>::~IOBuffer<T, U>(){
+	if(internal_buffer_){ ::free(internal_buffer_); }
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getCapacity() const noexcept {
+	return capacity_;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::pointer_type IOBuffer<T, U>::getBuffer() const noexcept {
+	return internal_buffer_;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::pointer_type IOBuffer<T, U>::getStartOffsetPointer() const noexcept {
+	return &internal_buffer_[start_offset_];
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::pointer_type IOBuffer<T, U>::getEndOffsetPointer() const noexcept {
+	return &internal_buffer_[end_offset_];
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::pointer_type IOBuffer<T, U>::getBufferEnd() const noexcept {
+	return (internal_buffer_ + capacity_-1);
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::headroom() const noexcept {
+	return (&internal_buffer_ - &internal_buffer_[start_offset_]);
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr void IOBuffer<T, U>::setEndOffset(int offset_len) noexcept {
+	end_offset_ += offset_len;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::iterator IOBuffer<T, U>::begin() noexcept {
+	return &internal_buffer_[start_offset_];
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::iterator IOBuffer<T, U>::end() noexcept {
+	return &internal_buffer_[end_offset_];
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::const_iterator IOBuffer<T, U>::cbegin() const noexcept {
+	return &internal_buffer_[start_offset_];
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::const_iterator IOBuffer<T, U>::cend() const noexcept {
+	return &internal_buffer_[start_offset_];
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr std::pair<typename IOBufTraits<T>::pointer_type, typename IOBufTraits<T>::pointer_type> 
+IOBuffer<T, U>::getOffset(
+		typename IOBufTraits<T>::size_type start_offset, typename IOBufTraits<T>::size_type end_offset) const noexcept {
+	if(start_offset <= capacity_ && end_offset <= capacity_){
+		return {&internal_buffer_[start_offset], &internal_buffer_[end_offset]};
+	}
+	return {nullptr, nullptr};
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr std::pair<typename IOBufTraits<T>::pointer_type, typename IOBufTraits<T>::pointer_type> 
+IOBuffer<T, U>::getOffset(
+		typename IOBufTraits<T>::size_type offset_len) const noexcept {
+	if(offset_len <= capacity_){
+		return {&internal_buffer_[start_offset_], &internal_buffer_[offset_len]};
+	}
+	return {nullptr, nullptr};
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getAvailableSpace() const noexcept {
+	return capacity_ - end_offset_;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr void 
+IOBuffer<T, U>::appendRawBytes(typename IOBufTraits<T>::pointer_type data, typename IOBufTraits<T>::size_type size) noexcept(false) {
+	if(getAvailableSpace() >= size){
+		::memcpy(&internal_buffer_[end_offset_+1], data, size);
+		end_offset_ += size;
+	}else{
+		reserve(size);
+		appendRawBytes(data, size);
+	}
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr void
+IOBuffer<T, U>::appendRawBytes(const IOBuffer<typename IOBufTraits<T>::value_type>& io_buffer) noexcept(false) {
+	if(io_buffer.getDataSize() <= getAvailableSpace()){
+		::memcpy(&internal_buffer_[end_offset_+1], io_buffer.getStartOffsetPointer(), io_buffer.getDataSize());
+		end_offset_ += io_buffer.getDataSize();
+	}else{
+		reserve(io_buffer.getDataSize());
+		appendRawBytes(io_buffer);
+	}
+}
+
+
 
 } // end namespace io

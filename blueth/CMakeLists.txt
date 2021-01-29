@@ -6,6 +6,10 @@ set(
 	./containers/stack_array.hpp
 	)
 set(
+	IO_DIR_FILES
+	./io/IOBuffer.hpp
+)
+set(
 	NET_DIR_FILES
 	./net/TcpEndpoint.hpp
 	./net/TransportHelpers.hpp
@@ -13,7 +17,8 @@ set(
 add_library(
 	${LIB_NAME} 
 	STATIC ${CONTAINER_DIR_FILES}
-	${NET_DIR_FILES}
+	${NET_DIR_FILES} 
+	${IO_DIR_FILES}
 	)
 set_target_properties(
 	${LIB_NAME}
