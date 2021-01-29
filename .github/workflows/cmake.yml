@@ -26,7 +26,7 @@ jobs:
                           run: |
                                 sudo apt-get update -y
                                 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-                                sudo apt install cmake curl -y
+                                sudo apt install cmake curl php ninja-build -y
                                 sudo apt install gcc-9 g++-9
                                 echo -e "\nGCC VERSION:\n"
                                 gcc --version
@@ -35,20 +35,4 @@ jobs:
                         - name: Configuring and Build
                           shell: bash
                           run: |
-                                if ! [[ -d "build" ]]; then
-                                        BUILD_AND_TEST_SCRIPT="makeprg_build.sh"
-                                        TEST_SCRIPT="run_test.sh"
-                                        mkdir build && cd build
-                                        cp ../ci/${BUILD_AND_TEST_SCRIPT} .
-                                        cp ../ci/${TEST_SCRIPT} .
-                                        chmod +x ./${BUILD_AND_TEST_SCRIPT}
-                                        chmod +x ./${TEST_SCRIPT}
-                                        ./${BUILD_AND_TEST_SCRIPT}
-                                else
-                                        BUILD_AND_TEST_SCRIPT="makeprg_build.sh"
-                                        TEST_SCRIPT="run_test.sh"
-                                        chmod +x ./${BUILD_AND_TEST_SCRIPT}
-                                        chmod +x ./${TEST_SCRIPT}
-                                        cd build && rm -rf *
-                                        ./${BUILD_AND_TEST_SCRIPT}
-                                fi
+                                  php ci/make_run_tests.php _build
