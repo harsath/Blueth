@@ -4,8 +4,12 @@
 #include <cstring>
 #include <exception>
 #include <memory>
+#include <string>
 #include <type_traits>
 #include <utility>
+
+#include <iostream>
+#define print(val) std::cout << val << std::endl
 
 /* IOBuffer is a small abstraction over raw uint8_t bytes internally used for Async state recorder & handlers
  * It manages a uint8_t bytes and keepts track of used offsets within the memory
@@ -250,8 +254,7 @@ inline void IOBuffer<T, U>::free() noexcept {
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getDataSize() const noexcept {
-	// since, {end, start}_offset is a index, we need +1 for size
-	return (end_offset_ - start_offset_);
+	return end_offset_ - start_offset_;
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
@@ -276,12 +279,12 @@ inline constexpr typename IOBufTraits<T>::const_pointer_type IOBuffer<T, U>::get
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::const_pointer_type IOBuffer<T, U>::getStartOffsetPointer() const noexcept {
-	return &internal_buffer_[start_offset_];
+	return internal_buffer_ + start_offset_;
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::const_pointer_type IOBuffer<T, U>::getEndOffsetPointer() const noexcept {
-	return &internal_buffer_[end_offset_];
+	return internal_buffer_ + end_offset_;
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
@@ -341,16 +344,14 @@ IOBuffer<T, U>::getOffset(
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getAvailableSpace() const noexcept {
-	return capacity_ - end_offset_;
+	return capacity_ - (end_offset_-1);
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr void 
 IOBuffer<T, U>::appendRawBytes(typename IOBufTraits<T>::const_pointer_type data, typename IOBufTraits<T>::size_type size) noexcept(false) {
 	if(getAvailableSpace() >= size){
-		auto offset_memcpy = end_offset_+1;
-		if(!getDataSize()){ offset_memcpy = 0; }
-		::memcpy(&internal_buffer_[offset_memcpy], data, size);
+		::memcpy(internal_buffer_ + end_offset_, data, size);
 		end_offset_ += size;
 	}else{
 		reserve(size);
@@ -362,9 +363,7 @@ template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr void
 IOBuffer<T, U>::appendRawBytes(const IOBuffer<typename IOBufTraits<T>::value_type>& io_buffer) noexcept(false) {
 	if(io_buffer.getDataSize() <= getAvailableSpace()){
-		auto offset_memcpy = end_offset_+1;
-		if(!getDataSize()){ offset_memcpy = 0; }
-		::memcpy(&internal_buffer_[offset_memcpy], io_buffer.getStartOffsetPointer(), io_buffer.getDataSize());
+		::memcpy(internal_buffer_ + end_offset_, io_buffer.getStartOffsetPointer(), io_buffer.getDataSize());
 		end_offset_ += io_buffer->getDataSize();
 	}else{
 		reserve(io_buffer.getDataSize());
