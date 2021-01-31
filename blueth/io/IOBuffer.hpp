@@ -218,7 +218,6 @@ inline void IOBuffer<T, U>::reserve(typename IOBufTraits<T>::size_type mem_size)
 	typename IOBufTraits<T>::pointer_type tmp_ptr = (typename IOBufTraits<T>::pointer_type)
 								::realloc(internal_buffer_, mem_size);	
 	if(tmp_ptr == nullptr){ 
-		::free(tmp_ptr);
 		throw std::bad_alloc{};
 	}
 	internal_buffer_ = tmp_ptr;
@@ -249,7 +248,8 @@ inline constexpr void IOBuffer<T, U>::setStartOffset(int offset_len) noexcept {
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline void IOBuffer<T, U>::free() noexcept {
-	::free(internal_buffer_);
+	if(internal_buffer_ != nullptr)
+		::free(internal_buffer_);
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
@@ -264,7 +264,7 @@ inline void IOBuffer<T, U>::destroy(std::unique_ptr<IOBuffer<T>> io_buffer){
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline IOBuffer<T, U>::~IOBuffer<T, U>(){
-	if(internal_buffer_){ ::free(internal_buffer_); }
+	if(internal_buffer_ != nullptr){ ::free(internal_buffer_); }
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
