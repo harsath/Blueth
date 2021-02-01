@@ -29,13 +29,15 @@ namespace blueth::container{
 	};
 	template<typename T, std::size_t buffer_size> inline StackArray<T, buffer_size>::StackArray()
 		{
-			this->_internal_stack_buffer = this->_stack_allocator();
+			_internal_stack_buffer = _stack_allocator();
 		}
 	template<typename T, std::size_t buffer_size> inline StackArray<T, buffer_size>::StackArray(StackArray<T, buffer_size>&& mover_array){
 		if(&mover_array != this){
-			this->_buffer_size = mover_array._buffer_size;
-			this->_internal_stack_buffer = mover_array._internal_stack_buffer;
-			mover_array._buffer_size = 0;
+			_size = mover_array._size;
+			_curr_capacity = mover_array._curr_capacity;
+			_internal_stack_buffer = mover_array._internal_stack_buffer;
+			mover_array._size = 0;
+			mover_array._curr_capacity = 0;
 			mover_array._internal_stack_buffer = nullptr;
 		}
 	}
@@ -43,11 +45,11 @@ namespace blueth::container{
 		return _internal_stack_buffer;
 	}
 	template<typename T, std::size_t buffer_size> inline std::size_t StackArray<T, buffer_size>::size() noexcept {
-		return this->_size;
+		return _size;
 	}
 	template<typename T, size_t buffer_size> inline typename StackArray<T, buffer_size>::iterator 
 	StackArray<T, buffer_size>::begin() noexcept {
-		return this->_internal_stack_buffer;		
+		return _internal_stack_buffer;		
 	}
 	template<typename T, size_t buffer_size> inline typename StackArray<T, buffer_size>::iterator 
 	StackArray<T, buffer_size>::end() noexcept {

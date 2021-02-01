@@ -25,11 +25,11 @@ namespace container{
 	}
 	template<typename T, std::size_t num_row, std::size_t num_column>
 	inline const std::vector<T>& Matrix<T, num_row, num_column>::operator[](std::size_t row) const noexcept {
-		return this->_holder.at(row);
+		return _holder.at(row);
 	}
 	template<typename T, std::size_t num_row, std::size_t num_column>
 	inline std::vector<T>& Matrix<T, num_row, num_column>::operator[](std::size_t row) noexcept {
-		return this->_holder.at(row);
+		return _holder.at(row);
 	}
 	template<typename T, std::size_t num_row, std::size_t num_column>
 		inline Matrix<T, num_row, num_column>::Matrix(

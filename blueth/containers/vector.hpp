@@ -36,7 +36,7 @@ namespace blueth::container{
 			vector& operator=(vector&&);
 			vector(const std::initializer_list<T>&);
 			explicit vector(vector&&);
-			// proxy to this->reserve() to define complexity
+			// proxy to reserve() to define complexity
 			void resize(std::size_t) noexcept(false);
 			~vector();
 			// Iterator stuff: not bounds checked
@@ -60,67 +60,67 @@ namespace blueth::container{
 			void m_reserve(std::size_t) noexcept(false);
 	};
 	template<typename T> inline void vector<T>::shrink_to_fit() noexcept {
-		if(this->m_size != this->m_capacity){
-			std::size_t offset_to_free = this->m_capacity - this->m_size;		
-			for(std::size_t index{this->m_size}; index <= offset_to_free; index++)
+		if(m_size != m_capacity){
+			std::size_t offset_to_free = m_capacity - m_size;		
+			for(std::size_t index{m_size}; index <= offset_to_free; index++)
 				std::destroy_at(object + index+1);
-			this->m_capacity = this->m_size;
+			m_capacity = m_size;
 		}
 	}
 	template<typename T> inline void vector<T>::push_back(const T& item){
-		if(this->m_capacity > this->m_size){
-			*(object + this->m_size) = item;
-			this->m_size++;
+		if(m_capacity > m_size){
+			*(object + m_size) = item;
+			m_size++;
 		}else{
-			this->m_reserve(this->m_capacity * 2);
-			*(object + this->m_size) = item;
-			this->m_size++;
+			m_reserve(m_capacity * 2);
+			*(object + m_size) = item;
+			m_size++;
 		}
 	}
 	template<typename T> inline void vector<T>::push_back(T&& item){
-		if(this->m_capacity > this->m_size){
-			*(object + this->m_size) = std::move(item);
-			this->m_size++;
+		if(m_capacity > m_size){
+			*(object + m_size) = std::move(item);
+			m_size++;
 		}else{
-			this->m_reserve(this->m_capacity * 2);
-			*(object + this->m_size) = std::move(item);
-			this->m_size++;
+			m_reserve(m_capacity * 2);
+			*(object + m_size) = std::move(item);
+			m_size++;
 		}
 	}
 	template<typename T> inline void vector<T>::push_front(const T& item){
-		if(this->m_capacity > this->m_size){
-			T* tmp_store = ::new T[this->m_capacity];
+		if(m_capacity > m_size){
+			T* tmp_store = ::new T[m_capacity];
 			*tmp_store = item;
-			for(std::size_t index{1}; index < this->m_size; index++)
-				*(tmp_store + index) = *(this->object + (this->m_size-1));
-			delete[] this->object;
-			this->object = tmp_store;
-			this->m_size++;
+			for(std::size_t index{1}; index < m_size; index++)
+				*(tmp_store + index) = *(object + (m_size-1));
+			delete[] object;
+			object = tmp_store;
+			m_size++;
 		}else{
-			this->m_capacity = this->m_capacity * 2;
-			T* tmp_store = ::new T[this->m_capacity];
+			m_capacity = m_capacity * 2;
+			T* tmp_store = ::new T[m_capacity];
 			*tmp_store = item;
-			for(std::size_t index{1}; index < this->m_size; index++)
-				*(tmp_store + index) = *(this->object + (this->m_size-1));
-			delete[] this->object;
-			this->object = tmp_store;
-			this->m_size++;
+			for(std::size_t index{1}; index < m_size; index++)
+				*(tmp_store + index) = *(object + (m_size-1));
+			delete[] object;
+			object = tmp_store;
+			m_size++;
 		}
 	}
 	template<typename T>
 	template<typename... Args>
 	inline void vector<T>::emplace_back(Args&&... args){
-		if(this->m_capacity > this->m_size){
-			::new(this->object + ((this->m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
-			this->m_size++;
+		if(m_capacity > m_size){
+			::new(object + ((m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
+			m_size++;
 		}else{
-			this->m_reserve(this->m_capacity * 2);
-			::new(this->object + ((this->m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
-			this->m_size++;
+			m_reserve(m_capacity * 2);
+			::new(object + ((m_size-1)*sizeof(T))) T(std::forward<Args>(args)...);
+			m_size++;
 		}
 	}
 	template<typename T> inline T& vector<T>::at(std::size_t index){
-		if(this->m_size > index){
+		if(m_size > index){
 			return *(object + index);
 		}else{
 			throw std::out_of_range("at() out of bound");
@@ -128,21 +128,21 @@ namespace blueth::container{
 	}
 	template<typename T> inline vector<T>::vector(const std::initializer_list<T>& init_list)
 		: m_size(init_list.size()), m_capacity(init_list.size()*2){
-		this->object = new T[m_capacity];
-		for(std::size_t index{}; index < this->m_size; index++)
+		object = new T[m_capacity];
+		for(std::size_t index{}; index < m_size; index++)
 			object[index] = std::move(*(init_list.begin()+index));
 	}
 	template<typename T> inline std::size_t vector<T>::size() const noexcept {
-		return this->m_size;
+		return m_size;
 	}
 	template<typename T> inline bool vector<T>::empty() const noexcept {
-		return this->m_size == 0;
+		return m_size == 0;
 	}
 	template<typename T> inline std::size_t vector<T>::capacity() const noexcept {
-		return this->m_capacity;
+		return m_capacity;
 	}
 	template<typename T> inline const T& vector<T>::operator[](std::size_t index) const {
-		if(this->m_size > index){
+		if(m_size > index){
 			return *(object + index);
 		}else{
 			throw std::out_of_range("operator[] out of bound");
@@ -157,87 +157,87 @@ namespace blueth::container{
 	}
 	template<typename T> inline vector<T>& vector<T>::operator=(vector<T>&& rhs){
 		if(this == &rhs){ return *this; }		
-		std::swap(this->m_capacity, rhs.m_capacity);
-		std::swap(this->m_size, rhs.m_size);
-		std::swap(this->object, rhs.object);
+		std::swap(m_capacity, rhs.m_capacity);
+		std::swap(m_size, rhs.m_size);
+		std::swap(object, rhs.object);
 		return *this;
 	}
 	template<typename T> inline vector<T>::vector(std::size_t init_size)
 		: m_size(init_size){
-			this->object = new T[m_capacity];
+			object = new T[m_capacity];
 	}
 	template<typename T> inline vector<T>::vector(const vector<T>& rhs)
 		: m_capacity(rhs.m_capacity), m_size(rhs.m_size){
-			this->object = new T[m_capacity];
+			object = new T[m_capacity];
 			for(std::size_t index{}; index <= m_size; index++)
-				this->object[index] = rhs.object[index];
+				object[index] = rhs.object[index];
 	}
 	template<typename T> inline vector<T>::~vector<T>(){
-		if(this->object)
-		{ delete[] this->object; }
+		if(object)
+		{ delete[] object; }
 	}
 	template<typename T> inline vector<T>::vector(vector&& move_rhs)
 		: m_capacity(move_rhs.m_capacity), m_size(move_rhs.m_size){
-		this->object = move_rhs.object;
+		object = move_rhs.object;
 		move_rhs.object = nullptr;
 		move_rhs.m_capacity = 0;
 		move_rhs.m_size = 0;
 	}
 	template<typename T> inline void vector<T>::resize(std::size_t size){
-		if(size > this->m_capacity){
-			this->m_capacity = size * 2;
-			this->m_reserve(this->m_capacity);
+		if(size > m_capacity){
+			m_capacity = size * 2;
+			m_reserve(m_capacity);
 		}else{
-			for(std::size_t index{size}; index < this->m_size; index++)
+			for(std::size_t index{size}; index < m_size; index++)
 				std::destroy_at(object + index+1);
-			this->m_size = size;
-			this->m_capacity = size;
+			m_size = size;
+			m_capacity = size;
 		}
 	}
 	template<typename T> inline void vector<T>::m_reserve(std::size_t allocation_size){
 		T* new_tmp = new T[allocation_size];	
-		for(std::size_t index{}; index < this->m_size; index++)
-			new_tmp[index] = this->object[index];
-		delete[] this->object;
-		this->object = new_tmp;
-		this->m_capacity = allocation_size;
+		for(std::size_t index{}; index < m_size; index++)
+			new_tmp[index] = object[index];
+		delete[] object;
+		object = new_tmp;
+		m_capacity = allocation_size;
 	}
 	template<typename T> inline const T& vector<T>::front() const {
-		if(this->m_size > 0){
+		if(m_size > 0){
 			return *(object);
 		}else{
 			throw std::logic_error("calling fount() on empty container");
 		}
 	}
 	template<typename T> inline const T& vector<T>::back() const {
-		if(this->m_size > 0){
+		if(m_size > 0){
 			return *(object + (m_size-1));
 		}else{
 			throw std::logic_error("calling back() in an empty container");
 		}
 	}
 	template<typename T> inline void vector<T>::pop_back(){
-		if(this->m_size != 0){
-			std::destroy_at(object + (this->m_size-1));
-			this->m_size--;
+		if(m_size != 0){
+			std::destroy_at(object + (m_size-1));
+			m_size--;
 		}else{
 			throw std::out_of_range("calling pop_back() on empty container");
 		}
 	}
 	template<typename T> inline typename vector<T>::iterator vector<T>::begin() noexcept {
-		if(this->m_size > 0){ return object; }
+		if(m_size > 0){ return object; }
 		else{ return nullptr; }
 	}
 	template<typename T> inline typename vector<T>::iterator vector<T>::end() noexcept {
-		if(this->m_size > 0){ return (object + m_size-1); }
+		if(m_size > 0){ return (object + m_size-1); }
 		else{ return nullptr; }
 	}
 	template<typename T> inline typename vector<T>::const_iterator vector<T>::begin() const noexcept {
-		if(this->m_size > 0){ return object; }
+		if(m_size > 0){ return object; }
 		else{ return nullptr; }
 	}
 	template<typename T> inline typename vector<T>::const_iterator vector<T>::end() const noexcept {
-		if(this->m_size > 0){ return (object + m_size-1); }
+		if(m_size > 0){ return (object + m_size-1); }
 		else{ return nullptr; }
 	}
 } // end namespace blueth::container

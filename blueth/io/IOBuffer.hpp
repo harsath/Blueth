@@ -12,7 +12,7 @@
 #define print(val) std::cout << val << std::endl
 
 /* IOBuffer is a small abstraction over raw uint8_t bytes internally used for Async state recorder & handlers
- * It manages a uint8_t bytes and keepts track of used offsets within the memory
+ * It manages a uint8_t bytes and keeps track of used offsets within the memory
  * Primarily used for Async implementation which operates over Non-Blocking network socket IO
  *
  *        start_offset           end_offset
@@ -220,6 +220,7 @@ inline void IOBuffer<T, U>::reserve(typename IOBufTraits<T>::size_type mem_size)
 	if(tmp_ptr == nullptr){ 
 		throw std::bad_alloc{};
 	}
+	::free(internal_buffer_);
 	internal_buffer_ = tmp_ptr;
 	capacity_ = mem_size;
 }
