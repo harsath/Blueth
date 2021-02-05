@@ -26,7 +26,7 @@ jobs:
                           run: |
                                 sudo apt-get update -y
                                 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-                                sudo apt install cmake curl php ninja-build -y
+                                sudo apt install cmake ninja-build -y
                                 sudo apt install gcc-9 g++-9
                                 echo -e "\nGCC VERSION:\n"
                                 gcc --version
@@ -35,4 +35,4 @@ jobs:
                         - name: Configuring and Build
                           shell: bash
                           run: |
-                                  php ci/make_run_tests.php _build
+                                  perl ci/make_run_tests.pl _build
