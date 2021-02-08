@@ -12,21 +12,30 @@
 #define print(val) std::cout << val << std::endl
 
 /* IOBuffer is a small abstraction over raw uint8_t bytes internally used for Async state recorder & handlers
- * It manages a uint8_t bytes and keeps track of used offsets within the memory
+ * It manages a uint8_t/char bytes and keeps track of used offsets within the memory
  * Primarily used for Async implementation which operates over Non-Blocking network socket IO
  *
- *        start_offset           end_offset
- *           |                     |
- *           v                     v
+ *        start_offset             end_offset
+ *           |                       |
+ *           v                       v
  *    +------+---------------------+------------+          (buffer_end - buffer_start) = capacity of underlying memory
  *    | [1]  |        Data         |   Un-Init  |           [1] => Already *sent* bytes through Non-blocking socket(headroom)
  *    +------+---------------------+------------+
  *    ^                                         ^
  *    |                                         |
  *    buffer_start                            buffer_end
+ *
+ *         end_offset points to memory one location past the last element(Data memory region)
+ *     
+ *          start_offset    end_offset
+ *	       |           |
+ *	       v           v
+ *	     +---+---+---+---+
+ *	     | H | e | y | ~ |          	           ~ => Un-initilized memory
+ *	     +---+---+---+---+
  */
 
-namespace io {
+namespace blueth::io {
 
 template<typename T> struct IOBufTraits;
 template<> struct IOBufTraits<char> {
@@ -86,6 +95,7 @@ class IOBuffer {
 	   * @param offset_len Amount of bytes sent through the Non-blocking sockets. May pass signe/unsigned value
 	   */
 	  constexpr void setStartOffset(int offset_len) noexcept;
+	  constexpr void modifyStartOffset(int offset_len) noexcept;
 	  constexpr size_type getStartOffset() const noexcept;
 	  /**
 	   * Update the end offset of the underlying buffer
@@ -93,6 +103,7 @@ class IOBuffer {
 	   * @param offset_len Length to add/sub the end data offset
 	   */
 	  constexpr void setEndOffset(int offset_len) noexcept;
+	  constexpr void modifyEndOffset(int offset_len) noexcept;
 	  constexpr size_type getEndOffset() const noexcept;
 	  /**
 	   * Get an arbitary offset of bytes from the actual operational data of the buffer
@@ -128,10 +139,6 @@ class IOBuffer {
 	   */
 	  constexpr void clear() noexcept;
 	  /**
-	   * Free/Deallocate the underlying buffer memory
-	   */
-	  void free() noexcept;
-	  /**
 	   * Return the pointer to start underlying buffer
 	   */
 	  constexpr const_pointer_type getBuffer() const noexcept;
@@ -159,10 +166,7 @@ class IOBuffer {
 	   * Get actual working data/buffer's size (end_offset - start_offset)
 	   */
 	  constexpr size_type getDataSize() const noexcept;
-	  /**
-	   * Convenience function to destroy/deallocate a buffer(calls the Dtor)
-	   */
-	  static void destroy(std::unique_ptr<IOBuffer<T>> io_buffer);
+
 	  constexpr iterator begin() noexcept;
 	  constexpr iterator end() noexcept;
 	  constexpr const_iterator cbegin() const noexcept;
@@ -216,7 +220,6 @@ inline void IOBuffer<T, U>::reserve(typename IOBufTraits<T>::size_type mem_size)
 	if(tmp_ptr == nullptr){ 
 		throw std::bad_alloc{};
 	}
-	::free(internal_buffer_);
 	internal_buffer_ = tmp_ptr;
 	capacity_ = mem_size;
 }
@@ -239,24 +242,18 @@ inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getEndOffset
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline constexpr void IOBuffer<T, U>::setStartOffset(int offset_len) noexcept {
+inline constexpr void IOBuffer<T, U>::modifyStartOffset(int offset_len) noexcept {
 	start_offset_ += offset_len;
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline void IOBuffer<T, U>::free() noexcept {
-	if(internal_buffer_ != nullptr)
-		::free(internal_buffer_);
+inline constexpr void IOBuffer<T, U>::setStartOffset(int offset_len) noexcept {
+	start_offset_ = offset_len;
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getDataSize() const noexcept {
 	return end_offset_ - start_offset_;
-}
-
-template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline void IOBuffer<T, U>::destroy(std::unique_ptr<IOBuffer<T>> io_buffer){
-	io_buffer->~IOBuffer();
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
@@ -291,6 +288,11 @@ inline constexpr typename IOBufTraits<T>::const_pointer_type IOBuffer<T, U>::get
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr void IOBuffer<T, U>::setEndOffset(int offset_len) noexcept {
+	end_offset_ = offset_len;
+}
+
+template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
+inline constexpr void IOBuffer<T, U>::modifyEndOffset(int offset_len) noexcept {
 	end_offset_ += offset_len;
 }
 
@@ -311,7 +313,7 @@ inline constexpr typename IOBufTraits<T>::const_iterator IOBuffer<T, U>::cbegin(
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::const_iterator IOBuffer<T, U>::cend() const noexcept {
-	return &internal_buffer_[start_offset_];
+	return &internal_buffer_[end_offset_];
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
@@ -356,11 +358,11 @@ inline constexpr void
 IOBuffer<T, U>::appendRawBytes(const IOBuffer<typename IOBufTraits<T>::value_type>& io_buffer) noexcept(false) {
 	if(io_buffer.getDataSize() <= getAvailableSpace()){
 		::memcpy(internal_buffer_ + end_offset_, io_buffer.getStartOffsetPointer(), io_buffer.getDataSize());
-		end_offset_ += io_buffer->getDataSize();
+		end_offset_ += io_buffer.getDataSize();
 	}else{
 		reserve(io_buffer.getDataSize());
 		appendRawBytes(io_buffer);
 	}
 }
 
-} // end namespace io
+} // end namespace blueth::io

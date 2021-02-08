@@ -11,7 +11,7 @@ set(
 )
 set(
 	NET_DIR_FILES
-	./net/TcpEndpoint.hpp
+	./net/Socket.hpp
 	./net/TransportHelpers.hpp
 	)
 add_library(

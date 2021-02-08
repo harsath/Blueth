@@ -126,7 +126,7 @@ namespace Transport{
 		m_listen_socket();
 	}
 	inline void Socket::read_buff(char* read_buffer, std::size_t max_read_buff){
-		// TODO: implementation of a BufferRead object for handling the raw bytes into iteratable object.
+		// TODO: implementation of a IOBuffer object for handling the raw bytes into iteratable object.
 		// Currently in Blocking IO
 		read_data(_file_des, read_buffer, max_read_buff, 0);
 	}
