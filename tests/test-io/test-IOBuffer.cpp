@@ -40,5 +40,7 @@ TEST(IOBufferTestTwo, IOBuffer){
 	const std::uint8_t* sample_one = (std::uint8_t*)"Hello";
 	std::size_t sample_one_size = std::strlen((const char*)sample_one);
 	io_buffer->appendRawBytes(sample_one, sample_one_size);
-	//ASSERT_EQ(io_buffer->getAvailableSpace(), sample_one_size);
+	ASSERT_EQ(*((io_buffer->getEndOffsetPointer())-1), 'o');
+	ASSERT_EQ(io_buffer->getEndOffset(), 5);
+	ASSERT_EQ(io_buffer->getAvailableSpace(), 5);
 }

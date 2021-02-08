@@ -152,10 +152,6 @@ class IOBuffer {
 	   */
 	  constexpr size_type getCapacity() const noexcept;
 	  /**
-	   * Get amount of headroom(start of internal_buffer to currently used data)
-	   */
-	  constexpr size_type headroom() const noexcept;
-	  /**
 	   * Get amount of memory/space left before we need ran our and allocate (capacity - end_offset)
 	   */
 	  constexpr size_type getAvailableSpace() const noexcept;
@@ -294,11 +290,6 @@ inline constexpr typename IOBufTraits<T>::const_pointer_type IOBuffer<T, U>::get
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::headroom() const noexcept {
-	return (&internal_buffer_ - &internal_buffer_[start_offset_]);
-}
-
-template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr void IOBuffer<T, U>::setEndOffset(int offset_len) noexcept {
 	end_offset_ += offset_len;
 }
@@ -345,7 +336,7 @@ IOBuffer<T, U>::getOffset(
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::size_type IOBuffer<T, U>::getAvailableSpace() const noexcept {
-	return capacity_ - (end_offset_-1);
+	return capacity_ - (end_offset_);
 }
 
 template<typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
