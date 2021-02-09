@@ -23,28 +23,23 @@ namespace Transport{
 #define TCP_KEEPIDLE TCP_KEEPALIVE
 #endif
 	using namespace blueth::net::TransportHelper;
-	enum class TransportType : std::uint8_t { TCP };
-	enum class Domain { UNIX=AF_UNIX, IPv4=AF_INET, IPv6=AF_INET6 };
-	enum class SockType{ Stream=SOCK_STREAM, Datagram=SOCK_DGRAM, NonBlocking=SOCK_NONBLOCK };
-	enum class SockOptLevel{ SocketLevel=SOL_SOCKET, TcpLevel=SOL_TCP };
-	enum class SocketOptions{ ReuseAddress=SO_REUSEADDR, ReusePort=SO_REUSEPORT, TcpNoDelay=TCP_NODELAY }; // currently supported Opts
+	enum class Domain { Unix=AF_UNIX, Ipv4=AF_INET, Ipv6=AF_INET6 };
+	enum class SockType { Stream=SOCK_STREAM, Datagram=SOCK_DGRAM };
+	enum class SockOptLevel { SocketLevel=SOL_SOCKET, TcpLevel=SOL_TCP };
+	enum class SocketOptions { ReuseAddress=SO_REUSEADDR, ReusePort=SO_REUSEPORT, TcpNoDelay=TCP_NODELAY }; // currently supported Opts
 	class Socket{
 		private:
 			std::string _IP_addr;
 			std::uint16_t _port;
 			int _endpoint_backlog;
-			TransportType _transport_type = TransportType::TCP;
 			Domain _domain;
 			int _file_des;
 			SockType _sock_type;
 			struct sockaddr_in _server_sockaddr;
 			int _endpoint_sock_len;
 		public:
-			Socket(
-					const std::string& IP_addr, const std::uint16_t& port, int backlog,
-					TransportType transport_type, Domain communication_domain,
-					SockType socket_type
-				   );
+			Socket(const std::string& IP_addr, const std::uint16_t& port, int backlog,
+			       Domain communication_domain, SockType socket_type);
 			Socket(const Socket&) = delete;
 		 	Socket(Socket&&);
 			Socket() = default;
@@ -69,11 +64,11 @@ namespace Transport{
 			void m_create_socket();
 			void m_listen_socket();
 	};
+
 	inline Socket& Socket::operator=(Socket&& tcp_endpoint){
 		std::swap(_IP_addr, tcp_endpoint._IP_addr);
 		std::swap(_port, tcp_endpoint._port);
 		std::swap(_endpoint_backlog, tcp_endpoint._endpoint_backlog);
-		std::swap(_transport_type, tcp_endpoint._transport_type);
 		std::swap(_domain, tcp_endpoint._domain);
 		std::swap(_file_des, tcp_endpoint._file_des);
 		std::swap(_sock_type, tcp_endpoint._sock_type);
@@ -82,11 +77,11 @@ namespace Transport{
 		m_create_socket();
 		return *this;
 	}
+
 	inline Socket::Socket(Socket&& tcp_endpoint){
 		std::swap(_IP_addr, tcp_endpoint._IP_addr);
 		std::swap(_port, tcp_endpoint._port);
 		std::swap(_endpoint_backlog, tcp_endpoint._endpoint_backlog);
-		std::swap(_transport_type, tcp_endpoint._transport_type);
 		std::swap(_domain, tcp_endpoint._domain);
 		std::swap(_file_des, tcp_endpoint._file_des);
 		std::swap(_sock_type, tcp_endpoint._sock_type);
@@ -94,23 +89,25 @@ namespace Transport{
 		std::swap(_endpoint_sock_len, tcp_endpoint._endpoint_sock_len);
 		m_create_socket();
 	}
+
 	inline void Socket::m_listen_socket(){
 		int ret_code = ::listen(_file_des, _endpoint_backlog);
 		err_check(ret_code, "linux listen()");
 	}
-	inline Socket::Socket(
-					const std::string& IP_addr, const std::uint16_t& port, int backlog,
-					TransportType transport_type, Domain communication_domain,
-					SockType socket_type
-			) : _IP_addr{IP_addr}, _port{port}, _endpoint_backlog{backlog}, _transport_type{transport_type}, _domain{communication_domain},
+
+	inline Socket::Socket(const std::string& IP_addr, const std::uint16_t& port, int backlog,
+			      Domain communication_domain, SockType socket_type
+			) : _IP_addr{IP_addr}, _port{port}, _endpoint_backlog{backlog}, _domain{communication_domain},
 	       _sock_type{socket_type} {
 		       m_create_socket();
-	       }
+	}
+
 	inline void Socket::SetSocketOption(SockOptLevel sock_level, SocketOptions sock_opt) noexcept {
 		int optval = 1;
 		int ret_code = ::setsockopt(_file_des, static_cast<int>(sock_level), static_cast<int>(sock_opt), &optval, sizeof(optval));
 		err_check(ret_code, "linux setsockopt() err");
 	}
+
 	inline void Socket::m_create_socket(){
 		std::memset(&_server_sockaddr, 0, sizeof(sockaddr_in));
 		_server_sockaddr.sin_family = static_cast<int>(_domain);
@@ -120,34 +117,43 @@ namespace Transport{
 		err_check(_file_des, "socket() creation");
 		_endpoint_sock_len = sizeof(_server_sockaddr);
 	}
+
 	inline void Socket::bind_sock() noexcept {
 		int ret_code = ::bind(_file_des, reinterpret_cast<sockaddr*>(&_server_sockaddr), sizeof(sockaddr_in));
 		err_check(ret_code, "bind() error");
 		m_listen_socket();
 	}
+
 	inline void Socket::read_buff(char* read_buffer, std::size_t max_read_buff){
 		// TODO: implementation of a IOBuffer object for handling the raw bytes into iteratable object.
 		// Currently in Blocking IO
 		read_data(_file_des, read_buffer, max_read_buff, 0);
 	}
+
 	inline void Socket::write_buff(const char* write_buffer, std::size_t write_size){
 		write_data(_file_des, write_buffer, write_size, 0);
 	}
+
 	inline const std::string& Socket::get_ip() const noexcept {
 		return _IP_addr;
 	}
+
 	inline const std::uint16_t& Socket::get_port() const noexcept {
 		return _port;
 	}
+
 	inline const int Socket::get_socket_backlog() const noexcept {
 		return _endpoint_backlog;
 	}
+
 	inline const Domain Socket::get_socket_domain() const noexcept {
 		return _domain;
 	}
+
 	inline const int Socket::get_file_descriptor() const noexcept {
 		return _file_des;
 	}
+
 	inline void Socket::make_socket_nonblocking(){
 		int flags = ::fcntl(_file_des, F_GETFL, 0); 
 		if(flags == -1)
@@ -156,6 +162,7 @@ namespace Transport{
 		if(ret == -1)
 		{ throw std::runtime_error("fnctl() O_NONBLOCK"); }
 	}
+
 	inline Socket::~Socket(){
 		::close(_file_des);
 	}
