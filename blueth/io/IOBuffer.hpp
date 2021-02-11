@@ -8,9 +8,6 @@
 #include <type_traits>
 #include <utility>
 
-#include <iostream>
-#define print(val) std::cout << val << std::endl
-
 /* IOBuffer is a small abstraction over raw uint8_t bytes internally used for Async state recorder & handlers
  * It manages a uint8_t/char bytes and keeps track of used offsets within the memory
  * Primarily used for Async implementation which operates over Non-Blocking network socket IO
@@ -31,7 +28,7 @@
  *	       |           |
  *	       v           v
  *	     +---+---+---+---+
- *	     | H | e | y | ~ |          	           ~ => Un-initilized memory
+ *	     | H | e | y | ~ |          	           ~ => Un-initialized memory
  *	     +---+---+---+---+
  */
 
