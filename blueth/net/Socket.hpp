@@ -30,13 +30,13 @@ namespace Transport{
 	class Socket{
 		private:
 			std::string _IP_addr;
-			std::uint16_t _port;
-			int _endpoint_backlog;
+			std::uint16_t _port{};
+			int _endpoint_backlog{};
 			Domain _domain;
-			int _file_des;
+			int _file_des{};
 			SockType _sock_type;
 			struct sockaddr_in _server_sockaddr;
-			int _endpoint_sock_len;
+			int _endpoint_sock_len{};
 		public:
 			Socket(const std::string& IP_addr, const std::uint16_t& port, int backlog,
 			       Domain communication_domain, SockType socket_type);
