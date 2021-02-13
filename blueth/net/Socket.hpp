@@ -23,10 +23,10 @@ namespace Transport{
 #define TCP_KEEPIDLE TCP_KEEPALIVE
 #endif
 	using namespace blueth::net::TransportHelper;
-	enum class Domain { Unix=AF_UNIX, Ipv4=AF_INET, Ipv6=AF_INET6 };
-	enum class SockType { Stream=SOCK_STREAM, Datagram=SOCK_DGRAM };
-	enum class SockOptLevel { SocketLevel=SOL_SOCKET, TcpLevel=SOL_TCP };
-	enum class SocketOptions { ReuseAddress=SO_REUSEADDR, ReusePort=SO_REUSEPORT, TcpNoDelay=TCP_NODELAY }; // currently supported Opts
+	enum class Domain : int { Unix=AF_UNIX, Ipv4=AF_INET, Ipv6=AF_INET6 };
+	enum class SockType : int { Stream=SOCK_STREAM, Datagram=SOCK_DGRAM };
+	enum class SockOptLevel : int { SocketLevel=SOL_SOCKET, TcpLevel=SOL_TCP };
+	enum class SocketOptions : int { ReuseAddress=SO_REUSEADDR, ReusePort=SO_REUSEPORT, TcpNoDelay=TCP_NODELAY }; // currently supported Opts
 	class Socket{
 		private:
 			std::string _IP_addr;
@@ -44,7 +44,7 @@ namespace Transport{
 		 	Socket(Socket&&);
 			Socket() = default;
 			Socket& operator=(Socket&&);
-			void SetSocketOption(SockOptLevel sock_level, SocketOptions sock_opt) noexcept;
+			void set_socket_options(SockOptLevel sock_level, SocketOptions sock_opt) noexcept;
 			const std::string& get_ip() const noexcept;
 			const std::uint16_t& get_port() const noexcept;
 			const int get_socket_backlog() const noexcept;
@@ -102,7 +102,7 @@ namespace Transport{
 		       m_create_socket();
 	}
 
-	inline void Socket::SetSocketOption(SockOptLevel sock_level, SocketOptions sock_opt) noexcept {
+	inline void Socket::set_socket_options(SockOptLevel sock_level, SocketOptions sock_opt) noexcept {
 		int optval = 1;
 		int ret_code = ::setsockopt(_file_des, static_cast<int>(sock_level), static_cast<int>(sock_opt), &optval, sizeof(optval));
 		err_check(ret_code, "linux setsockopt() err");
