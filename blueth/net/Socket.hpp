@@ -74,7 +74,6 @@ namespace Transport{
 		std::swap(_sock_type, tcp_endpoint._sock_type);
 		std::swap(_server_sockaddr, tcp_endpoint._server_sockaddr);
 		std::swap(_endpoint_sock_len, tcp_endpoint._endpoint_sock_len);
-		m_create_socket();
 		return *this;
 	}
 
@@ -87,7 +86,6 @@ namespace Transport{
 		std::swap(_sock_type, tcp_endpoint._sock_type);
 		std::swap(_server_sockaddr, tcp_endpoint._server_sockaddr);
 		std::swap(_endpoint_sock_len, tcp_endpoint._endpoint_sock_len);
-		m_create_socket();
 	}
 
 	inline void Socket::m_listen_socket(){
