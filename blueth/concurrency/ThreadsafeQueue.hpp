@@ -9,17 +9,13 @@ template<typename T> class thread_safe_queue {
 	private:
 	  std::queue<T> queue_;
 	  mutable std::mutex mutex_;
-	  [[nodiscard]] bool empty_() const noexcept {
-	      std::lock_guard<std::mutex> op_lock{mutex_};
-	      return queue_.empty();
-	  }
 	public:
 	  thread_safe_queue() = default;
 	  thread_safe_queue(const thread_safe_queue<T>&) = delete;
 	  thread_safe_queue& operator=(const thread_safe_queue<T>&) = delete;
 	  thread_safe_queue(thread_safe_queue<T>&& queue_move) noexcept(false) {
 	      std::lock_guard<std::mutex> op_lock{mutex_};
-	      if(!empty_()){ throw std::logic_error("Moving into a non-empty queue"); }
+	      if(!queue_.empty()){ throw std::logic_error("Moving into a non-empty queue"); }
 	      queue_(std::move(queue_move));
 	  }
 	  [[nodiscard]] std::size_t size() const noexcept {
