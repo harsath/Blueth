@@ -14,11 +14,16 @@ set(
 	./net/Socket.hpp
 	./net/TransportHelpers.hpp
 	)
+set(
+	OTHER_UTIL
+	./simd.hpp
+	)
 add_library(
 	${LIB_NAME} 
 	STATIC ${CONTAINER_DIR_FILES}
 	${NET_DIR_FILES} 
 	${IO_DIR_FILES}
+	${OTHER_UTIL}
 	)
 set_target_properties(
 	${LIB_NAME}
