@@ -266,4 +266,4 @@ inline typename vector<T>::const_iterator vector<T>::end() const noexcept {
 		return nullptr;
 	}
 }
-} // end namespace blueth::container
+} // !blueth::container

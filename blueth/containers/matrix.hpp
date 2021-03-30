@@ -42,4 +42,4 @@ inline Matrix<T, num_row, num_column>::Matrix(
     std::vector<std::vector<T>> &&holder)
     : _holder(std::move(holder)) {}
 
-} // namespace blueth::container
+} // !blueth::container

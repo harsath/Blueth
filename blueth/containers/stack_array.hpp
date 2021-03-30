@@ -86,4 +86,4 @@ inline StackArray<T, buffer_size>::~StackArray() {
 			     _internal_stack_buffer + _size);
 }
 
-} // end namespace blueth::container
+} // !blueth::container

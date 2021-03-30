@@ -42,4 +42,4 @@ template <typename T> class thread_safe_queue {
 		queue_.emplace(std::move(data));
 	}
 };
-} // end namespace blueth::concurrency
+} // !blueth::concurrency

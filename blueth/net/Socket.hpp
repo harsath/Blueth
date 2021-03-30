@@ -172,4 +172,4 @@ inline void Socket::make_socket_nonblocking() {
 
 inline Socket::~Socket() { ::close(_file_des); }
 
-} // end namespace Transport
+} // !blueth::net

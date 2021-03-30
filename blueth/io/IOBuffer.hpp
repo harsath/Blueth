@@ -401,4 +401,4 @@ inline constexpr void IOBuffer<T, U>::appendRawBytes(
 	}
 }
 
-} // end namespace blueth::io
+} // !blueth::io
