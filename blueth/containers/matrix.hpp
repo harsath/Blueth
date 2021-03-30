@@ -2,8 +2,7 @@
 #include <initializer_list>
 #include <vector>
 
-namespace blueth {
-namespace container {
+namespace blueth::container {
 template <typename T, std::size_t num_row, std::size_t num_column>
 class Matrix {
 	std::vector<std::vector<T>> _holder;
@@ -42,6 +41,5 @@ template <typename T, std::size_t num_row, std::size_t num_column>
 inline Matrix<T, num_row, num_column>::Matrix(
     std::vector<std::vector<T>> &&holder)
     : _holder(std::move(holder)) {}
-} // namespace container
 
-} // namespace blueth
+} // namespace blueth::container

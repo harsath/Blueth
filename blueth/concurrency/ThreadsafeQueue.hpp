@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <type_traits>
 
+namespace blueth::concurrency {
 template <typename T> class thread_safe_queue {
       private:
 	std::queue<T> queue_;
@@ -41,3 +42,4 @@ template <typename T> class thread_safe_queue {
 		queue_.emplace(std::move(data));
 	}
 };
+} // end namespace blueth::concurrency

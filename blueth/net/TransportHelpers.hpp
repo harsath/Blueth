@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 namespace blueth::net {
-namespace TransportHelper {
 inline void err_check(int returner, const std::string &err_str) {
 	if (returner < 0) {
 		perror(err_str.c_str());
@@ -29,5 +28,4 @@ inline void close_connection(int client_fd) {
 	int close_ret = ::close(client_fd);
 	err_check(close_ret, "linux close()");
 }
-} // namespace TransportHelper
 } // namespace blueth::net
