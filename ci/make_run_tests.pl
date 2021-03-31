@@ -1,10 +1,12 @@
 #!/bin/perl
 use warnings;
 use strict;
-use constant COMPILER_FLAGS => "-Wall -O2 -g";
-use constant CC => "gcc-9";
-use constant CXX => "g++-9";
-use constant USE_CMAKE => 0;
+use constant {
+	COMPILER_FLAGS => "-Wall -O2 -g",
+	CC => "gcc-9",
+	CXX => "g++-9",
+	USE_CMAKE => 0
+};
 
 unless ($#ARGV+1 == 1){ 
 	print "Usage: ./script.pl <BUILD_DIR>"; exit(1); 
@@ -32,7 +34,7 @@ sub build_binary {
 }
 
 sub run_tests {
-	my $test_cmd = %{$TEST_BINS}{container}." && ".%{$TEST_BINS}{io}." && ".%{$TEST_BINS}{http};
+	my $test_cmd = ${$TEST_BINS}{container}." && ".${$TEST_BINS}{io}." && ".${$TEST_BINS}{http};
 	my $exit_code = system($test_cmd);
 	return $exit_code;
 }
