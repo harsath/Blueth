@@ -15,14 +15,12 @@
 #include <unistd.h>
 
 namespace blueth::net {
-namespace Transport {
 #if !defined(SOL_TCP) && defined(IPPROTO_TCP)
 #define SOL_TCP IPPROTO_TCP
 #endif
 #if !defined(TCP_KEEPIDLE) && defined(TCP_KEEPALIVE)
 #define TCP_KEEPIDLE TCP_KEEPALIVE
 #endif
-using namespace blueth::net::TransportHelper;
 enum class Domain : int { Unix = AF_UNIX, Ipv4 = AF_INET, Ipv6 = AF_INET6 };
 enum class SockType : int { Stream = SOCK_STREAM, Datagram = SOCK_DGRAM };
 enum class SockOptLevel : int { SocketLevel = SOL_SOCKET, TcpLevel = SOL_TCP };
@@ -174,5 +172,4 @@ inline void Socket::make_socket_nonblocking() {
 
 inline Socket::~Socket() { ::close(_file_des); }
 
-} // end namespace Transport
-} // end namespace blueth::net
+} // !blueth::net

@@ -6,12 +6,7 @@
 #include <nmmintrin.h>
 #include <pmmintrin.h>
 #include <smmintrin.h>
-
-#if defined(__clang__) || defined(__GNUC__)
-#define BLUETH_FORCE_INLINE [[gnu::always_inline]]
-#elif
-#define BLUETH_FORCE_INLINE
-#endif
+#include "common.hpp"
 
 namespace blueth::simd {
 /* This class 'bool_vector_128_sse2' is only used as the container for storing

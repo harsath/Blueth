@@ -1,22 +1,28 @@
 set(LIB_NAME libblueth)
 set(
 	CONTAINER_DIR_FILES
-	./containers/matrix.hpp
-	./containers/vector.hpp
-	./containers/stack_array.hpp
+	containers/matrix.hpp
+	containers/vector.hpp
+	containers/stack_array.hpp
 	)
 set(
 	IO_DIR_FILES
-	./io/IOBuffer.hpp
-)
+	io/IOBuffer.hpp
+	)
 set(
 	NET_DIR_FILES
-	./net/Socket.hpp
-	./net/TransportHelpers.hpp
+	net/Socket.hpp
+	net/TransportHelpers.hpp
 	)
 set(
 	OTHER_UTIL
-	./simd.hpp
+	simd.hpp
+	)
+set(
+	HTTP
+	http/http_message.hpp
+	http/http_headers.hpp
+	http/http_constants.hpp
 	)
 add_library(
 	${LIB_NAME} 
@@ -29,3 +35,7 @@ set_target_properties(
 	${LIB_NAME}
 	PROPERTIES LINKER_LANGUAGE CXX
 	)
+target_include_directories(
+	${LIB_NAME}
+	PUBLIC ./
+)
