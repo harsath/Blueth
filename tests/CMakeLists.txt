@@ -1,2 +1,3 @@
 add_subdirectory(./test-containers)
 add_subdirectory(./test-io)
+add_subdirectory(./test-http)

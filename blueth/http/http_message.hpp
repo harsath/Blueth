@@ -128,7 +128,7 @@ http_request_message::get_http_version() const noexcept {
 
 BLUETH_FORCE_INLINE void http_request_message::set_http_target_resource(
     std::string &&target_resource) noexcept {
-	target_resource_ = std::forward<std::string>(target_resource);
+	target_resource_ += std::forward<std::string>(target_resource);
 }
 
 BLUETH_FORCE_INLINE const std::string &
