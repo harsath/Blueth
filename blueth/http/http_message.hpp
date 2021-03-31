@@ -18,6 +18,7 @@ class http_request_message {
 	// These two are only to work with the state-machine parser
 	std::string temp_header_value_holder_;
 	std::string temp_header_name_holder_;
+	std::string temp_http_method_holder_;
 
       public:
 	http_request_message();
@@ -61,7 +62,12 @@ class http_request_message {
 	push_back_raw_body(std::string &&raw_body) noexcept;
 	BLUETH_FORCE_INLINE constexpr void
 	push_back_raw_body(char char_val) noexcept;
-	constexpr void push_back_target_resource(char char_value) noexcept;
+	BLUETH_FORCE_INLINE constexpr void 
+	push_back_target_resource(char char_val) noexcept;
+	BLUETH_FORCE_INLINE constexpr void
+	push_back_request_method(char char_val) noexcept;
+	BLUETH_FORCE_INLINE std::string
+	get_temp_request_method() const noexcept;
 };
 
 inline http_request_message::http_request_message()
@@ -194,8 +200,18 @@ http_request_message::push_back_raw_body(char char_val) noexcept {
 }
 
 BLUETH_FORCE_INLINE constexpr void
-http_request_message::push_back_target_resource(char char_value) noexcept {
-	target_resource_.push_back(char_value);
+http_request_message::push_back_target_resource(char char_val) noexcept {
+	target_resource_.push_back(char_val);
+}
+
+BLUETH_FORCE_INLINE constexpr void
+http_request_message::push_back_request_method(char char_val) noexcept {
+	temp_http_method_holder_.push_back(char_val);
+}
+
+BLUETH_FORCE_INLINE std::string 
+http_request_message::get_temp_request_method() const noexcept {
+	return temp_http_method_holder_;
 }
 
 } // namespace blueth::http
