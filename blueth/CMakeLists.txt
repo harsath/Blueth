@@ -35,3 +35,7 @@ set_target_properties(
 	${LIB_NAME}
 	PROPERTIES LINKER_LANGUAGE CXX
 	)
+target_include_directories(
+	${LIB_NAME}
+	PUBLIC ./
+)

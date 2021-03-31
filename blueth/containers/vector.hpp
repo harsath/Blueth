@@ -6,6 +6,8 @@
 #include <new>
 #include <stdexcept>
 #include <utility>
+// We will not use blueth::container::vector any where, we *only* use standard
+// std::vector. It's only written for fun.
 namespace blueth::container {
 template <typename T> class vector {
       public:
@@ -266,4 +268,4 @@ inline typename vector<T>::const_iterator vector<T>::end() const noexcept {
 		return nullptr;
 	}
 }
-} // !blueth::container
+} // namespace blueth::container

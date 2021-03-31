@@ -3,11 +3,8 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-#if defined(__clang__) || defined(__GNUC__)
-#define BLUETH_FORCE_INLINE [[gnu::always_inline]]
-#elif
-#define BLUETH_FORCE_INLINE
-#endif
+#include "common.hpp"
+
 namespace blueth::http {
 // A thin wrapper around std::unordered_map container for managing HTTP headers
 // easily

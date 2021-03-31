@@ -23,4 +23,9 @@ enum class stream_type {
 	sync_stream,
 	async_stream
 };
+
+enum class http_version {
+	http_1_1, http_2
+};
+
 } // namespace blueth::http
