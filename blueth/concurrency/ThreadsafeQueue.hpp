@@ -4,6 +4,7 @@
 #include <queue>
 #include <stdexcept>
 #include <type_traits>
+#include "common.hpp"
 
 namespace blueth::concurrency {
 template <typename T> class thread_safe_queue {
@@ -22,11 +23,11 @@ template <typename T> class thread_safe_queue {
 		}
 		queue_(std::move(queue_move));
 	}
-	[[nodiscard]] std::size_t size() const noexcept {
+	BLUETH_NODISCARD std::size_t size() const noexcept {
 		std::lock_guard<std::mutex> op_lock{mutex_};
 		return queue_.size();
 	}
-	[[nodiscard]] std::optional<T> pop() noexcept {
+	BLUETH_NODISCARD std::optional<T> pop() noexcept {
 		std::lock_guard<std::mutex> op_lock{mutex_};
 		if (queue_.empty()) { return std::nullopt; }
 		T returner{std::move(queue_.front())};
