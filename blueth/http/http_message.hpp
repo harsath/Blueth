@@ -44,7 +44,7 @@ class http_request_message {
 	BLUETH_FORCE_INLINE void
 	set_http_target_resource(std::string &&target_resource) noexcept;
 	BLUETH_FORCE_INLINE const std::string &
-	get_targer_resource() const noexcept;
+	get_target_resource() const noexcept;
 	void
 	set_raw_body(std::unique_ptr<io::IOBuffer<char>> io_buffer) noexcept;
 	BLUETH_FORCE_INLINE std::optional<std::string>
@@ -132,7 +132,7 @@ BLUETH_FORCE_INLINE inline void http_request_message::set_http_target_resource(
 }
 
 BLUETH_FORCE_INLINE inline const std::string &
-http_request_message::get_targer_resource() const noexcept {
+http_request_message::get_target_resource() const noexcept {
 	return target_resource_;
 }
 

@@ -33,7 +33,7 @@ TEST(HttpTestOne, HttpGet) {
 		ASSERT_TRUE(sample_request == http_message->build_raw_message());
 		ASSERT_TRUE(http_message->get_http_version() == http::http_version::http_1_1);
 		ASSERT_TRUE(http_message->get_request_type() == http::http_request_type::get);
-		ASSERT_TRUE(http_message->get_targer_resource() == "/index.php");
+		ASSERT_TRUE(http_message->get_target_resource() == "/index.php");
 		ASSERT_TRUE(http_message->const_get_http_headers()->header_count() == 3);
 		ASSERT_TRUE(http_message->get_header_value("Host") == "Proxygen.fb.com");
 	}

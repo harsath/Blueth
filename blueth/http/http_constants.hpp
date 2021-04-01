@@ -46,7 +46,6 @@ enum class parser_state {
 	header_name,
 	header_value,
 	header_value_lf,
-	header_value_end,
 	header_end_lf,
 	// Request body state
 	message_body,

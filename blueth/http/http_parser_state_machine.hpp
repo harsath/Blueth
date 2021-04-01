@@ -12,7 +12,7 @@
 #define print_me std::cout << "Here" << std::endl;
 namespace blueth::http {
 
-std::pair<parser_state, std::unique_ptr<http_request_message>>
+inline std::pair<parser_state, std::unique_ptr<http_request_message>>
 parse_http_1_1_request_message(
     const std::unique_ptr<io::IOBuffer<char>> &request_message,
     parser_state &current_state,
@@ -189,15 +189,12 @@ parse_http_1_1_request_message(
 		case parser_state::header_value_lf:
 			if (*start_buffer ==
 			    static_cast<char>(lex_consts::LF)) {
-				current_state = parser_state::header_value_end;
 				increment_buffer_offset();
+				http_message->add_temp_header_holder_to_message();
+				current_state = parser_state::header_name;
 			} else {
 				current_state = parser_state::protocol_error;
 			}
-			break;
-		case parser_state::header_value_end:
-			http_message->add_temp_header_holder_to_message();
-			current_state = parser_state::header_name;
 			break;
 		// clang-format off
 		case parser_state::header_end_lf:
@@ -236,6 +233,49 @@ parse_http_1_1_request_message(
 	}
 FINISH:
 	return {current_state, std::move(http_message)};
+}
+
+inline std::string state_as_string(parser_state state) noexcept {
+	switch(state){
+		case parser_state::protocol_error:
+			return "protocol_error";
+		case parser_state::request_line_begin:
+			return "request_line_begin";
+		case parser_state::request_method:
+			return "request_method";
+		case parser_state::request_resource:
+			return "request_resource";
+		case parser_state::request_protocol_H:
+			return "request_protocol_H";
+		case parser_state::request_protocol_T1:
+			return "request_protocol_T1";
+		case parser_state::request_protocol_T2:
+			return "request_protocol_T2";
+		case parser_state::request_protocol_P:
+			return "request_protocol_P";
+		case parser_state::request_protocol_slash:
+			return "request_protocol_slash";
+		case parser_state::request_protocol_version_major:
+			return "request_protocol_version_major";
+		case parser_state::request_protocol_dot:
+			return "request_protocol_dot";
+		case parser_state::request_protocol_version_minor:
+			return "request_protocol_version_minor";
+		case parser_state::request_line_lf:
+			return "request_line_lf";
+		case parser_state::header_name:
+			return "header_name";
+		case parser_state::header_value:
+			return "header_value";
+		case parser_state::header_value_lf:
+			return "header_value_lf";
+		case parser_state::header_end_lf:
+			return "header_end_lf";
+		case parser_state::message_body:
+			return "message_body";
+		case parser_state::parsing_done:
+			return "parsing_done";
+	}
 }
 
 } // namespace blueth::http
