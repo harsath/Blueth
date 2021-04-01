@@ -8,6 +8,8 @@
 #include <memory>
 #include <utility>
 
+#include <iostream>
+#define print_me std::cout << "Here" << std::endl;
 namespace blueth::http {
 
 std::pair<parser_state, std::unique_ptr<http_request_message>>
@@ -43,6 +45,7 @@ parse_http_1_1_request_message(
 			} else if (is_token(*start_buffer)) {
 				http_message->push_back_request_method(
 				    *start_buffer);
+				increment_buffer_offset();
 			} else {
 				current_state = parser_state::protocol_error;
 			}

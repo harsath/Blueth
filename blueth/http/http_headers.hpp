@@ -25,33 +25,33 @@ class http_headers {
 	~http_headers() {}
 };
 
-void http_headers::add_header(
+inline void http_headers::add_header(
     std::pair<std::string, std::string> header_pair) noexcept {
 	http_headers_.emplace(std::move(header_pair));
 }
 
-bool http_headers::remove_header(const std::string &header_name) noexcept {
+inline bool http_headers::remove_header(const std::string &header_name) noexcept {
 	if (!http_headers_.contains(header_name)) return false;
 	http_headers_.erase(header_name);
 	return true;
 }
 
-BLUETH_FORCE_INLINE bool
+BLUETH_FORCE_INLINE inline bool
 http_headers::header_contains(const std::string &header_name) const noexcept {
 	return http_headers_.contains(header_name);
 }
 
-BLUETH_FORCE_INLINE std::size_t http_headers::header_count() const noexcept {
+BLUETH_FORCE_INLINE inline std::size_t http_headers::header_count() const noexcept {
 	return http_headers_.size();
 }
 
-std::optional<std::string>
+inline std::optional<std::string>
 http_headers::get_header_value(const std::string &header_name) const noexcept {
 	if (!http_headers_.contains(header_name)) return std::nullopt;
 	return http_headers_.at(header_name);
 }
 
-std::string http_headers::build_raw_header() const noexcept {
+inline std::string http_headers::build_raw_header() const noexcept {
 	std::string returner;
 	for (const std::pair<std::string, std::string> &header :
 	     http_headers_) {

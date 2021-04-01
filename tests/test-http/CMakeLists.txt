@@ -12,6 +12,7 @@ include_directories(../../blueth/http)
 set(
 	TEST_HTTP_SOURCE_FILES
 	./test-http-message.cpp
+	./test-http-state-machine.cpp
 	)
 add_executable(
 	${TEST_HTTP_EXEC_NAME}
