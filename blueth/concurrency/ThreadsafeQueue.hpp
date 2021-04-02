@@ -1,10 +1,10 @@
 #pragma once
+#include "common.hpp"
 #include <mutex>
 #include <optional>
 #include <queue>
 #include <stdexcept>
 #include <type_traits>
-#include "common.hpp"
 
 namespace blueth::concurrency {
 template <typename T> class thread_safe_queue {
@@ -43,4 +43,4 @@ template <typename T> class thread_safe_queue {
 		queue_.emplace(std::move(data));
 	}
 };
-} // !blueth::concurrency
+} // namespace blueth::concurrency

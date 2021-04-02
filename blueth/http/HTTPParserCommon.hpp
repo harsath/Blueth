@@ -1,6 +1,6 @@
 #pragma once
+#include "HTTPConstants.hpp"
 #include "common.hpp"
-#include "http_constants.hpp"
 
 namespace blueth::http {
 
@@ -38,8 +38,8 @@ BLUETH_FORCE_INLINE constexpr static bool is_separator(char value) {
 	case '=':
 	case '{':
 	case '}':
-	case static_cast<char>(lex_consts::SP):
-	case static_cast<char>(lex_consts::HT):
+	case static_cast<char>(LexConsts::SP):
+	case static_cast<char>(LexConsts::HT):
 		return true;
 	default:
 		return false;
@@ -60,8 +60,8 @@ BLUETH_FORCE_INLINE constexpr static bool is_token(char value) {
 
 BLUETH_FORCE_INLINE constexpr static bool is_text(char value) {
 	return (!is_control(value) ||
-		(value == static_cast<char>(lex_consts::SP) ||
-		 (value == static_cast<char>(lex_consts::HT))));
+		(value == static_cast<char>(LexConsts::SP) ||
+		 (value == static_cast<char>(LexConsts::HT))));
 }
 
 } // namespace blueth::http
