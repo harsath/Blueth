@@ -24,11 +24,16 @@ set(
 	http/http_headers.hpp
 	http/http_constants.hpp
 	)
+set(
+	CONCURRENCY
+	concurrency/AsyncEventLoop.hpp
+)
 add_library(
 	${LIB_NAME} 
 	STATIC ${CONTAINER_DIR_FILES}
 	${NET_DIR_FILES} 
 	${IO_DIR_FILES}
+	${CONCURRENCY}
 	${OTHER_UTIL}
 	)
 set_target_properties(
