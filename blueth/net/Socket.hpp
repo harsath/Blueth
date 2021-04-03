@@ -60,7 +60,7 @@ class Socket {
 	void readBuffer(char *read_buffer, std::size_t max_read_buff);
 	void writeBuffer(const char *write_buffer, std::size_t write_size);
 	void bindSock() noexcept;
-	void makeSocketNonBlocking();
+	void makeSocketNonBlocking() noexcept(false);
 	~Socket();
 
       protected:
@@ -161,7 +161,7 @@ inline const int Socket::getFileDescriptor() const noexcept {
 	return _file_des;
 }
 
-inline void Socket::makeSocketNonBlocking() {
+inline void Socket::makeSocketNonBlocking() noexcept(false) {
 	int flags = ::fcntl(_file_des, F_GETFL, 0);
 	if (flags == -1) { throw std::runtime_error("fnctl() F_GETFL"); }
 	int ret = ::fcntl(_file_des, F_SETFL, flags | O_NONBLOCK);
@@ -169,5 +169,12 @@ inline void Socket::makeSocketNonBlocking() {
 }
 
 inline Socket::~Socket() { ::close(_file_des); }
+
+static void makeSocketNonBlocking(int socket) noexcept(false) {
+	int flags = ::fcntl(socket, F_GETFL, 0);
+	if(flags == -1){ throw std::runtime_error("fnctl() F_GETFL"); }
+	int ret = ::fcntl(socket, F_SETFL, flags | O_NONBLOCK);
+	if(ret == -1){ throw std::runtime_error("fcntl() O_NONBLOCK"); }
+}
 
 } // namespace blueth::net

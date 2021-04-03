@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <functional>
 #include <memory>
+#include <sys/epoll.h>
 #include <utility>
 
 namespace blueth::concurrency {
@@ -31,7 +32,7 @@ static constexpr FDStatus WantWrite{false, true};
 static constexpr FDStatus WantReadWrite{true, true};
 static constexpr FDStatus WantNoReadWrite{false, false};
 
-enum class event_type { on_ready_read, on_ready_write };
+enum class EventType { WriteEvent, ReadEvent, AcceptEvent };
 
 static void make_socketnonblocking(int socket_fd) noexcept {
 	int flags = ::fcntl(socket_fd, F_GETFL, 0);
@@ -45,20 +46,67 @@ static void make_socketnonblocking(int socket_fd) noexcept {
 	}
 }
 
-template<typename PeerState> class PeerStateBase {
-	public:
-	  virtual int get_fd() = 0;
-	  virtual void set_fd(int fd) = 0;
+/**
+ * A user must inherit this class and override the two functions, because these
+ * will be used by our event-dispatch handlers to remove/add a file-descriptor
+ * from watch list
+ */
+template <typename PeerState> class PeerStateHolderBase {
+      public:
+	/**
+	 * Get a File-Descriptor
+	 *
+	 * We use this getter and setter for the file-descriptor for
+	 * PeerState when we need to add/remove an it from the watch-list
+	 * @return FD which is for this current peer
+	 */
+	virtual int getFD() = 0;
+	/**
+	 * Set a File-Descriptor
+	 *
+	 * We use this when we first accept a connection and allocate a object
+	 * for the peer.
+	 *
+	 * @param fd File descriptor value to set.
+	 */
+	virtual void setFD(int fd) = 0;
+	/**
+	 * Get a PeerState, which is a pointer to the object which stores the
+	 * Peer's state.
+	 *
+	 * This will be used by the user if they need to manage the
+	 * pointers/objects which maintains the state
+	 * @return Pointer(or smart_pointer) to object which store this peer's
+	 * state
+	 */
+	virtual PeerState *getPeerStatePtr() = 0;
+	/**
+	 * Set a Peer's state. This is useful when we first allocate the object
+	 * itself or if we use a smart_pointer which have ownership symentics so
+	 * we need to use the std::move
+	 *
+	 * @param ptr The pointer to object(This class does not mange the
+	 * life-time of that object, unless it's a smart pointer which does when
+	 * this class dies.)
+	 */
+	virtual void setPeerStatePtr(PeerState *ptr) = 0;
 };
 
-template <typename PeerStatePtr> class EventLoopBase {
+template <typename PeerState> class EventLoopBase {
       public:
-	virtual void
-	    register_callback_accept(std::function<FDStatus(PeerStatePtr)>) = 0;
-	virtual void
-	    register_callback_event(std::function<FDStatus(PeerStatePtr)>,
-				    event_type) = 0;
-	virtual void remove_callback_event(PeerStatePtr, event_type) = 0;
+	virtual void registerCallbackForEvent(
+	    std::function<FDStatus(PeerStateHolderBase<PeerState> *)>,
+	    EventType) noexcept(false) = 0;
+	virtual void removePeerFromWatchlist(
+	    PeerStateHolderBase<PeerState> *) noexcept(false) = 0;
+	virtual void modifyEventForPeer(
+	    PeerStateHolderBase<PeerState> *) noexcept(false) = 0;
+	virtual void startEventloop() noexcept(false) = 0;
+	virtual ~EventLoopBase() = default;
+};
+
+struct EpollEventDeleter {
+	void operator()(epoll_event *event_ptr) { free(event_ptr); }
 };
 
 } // namespace blueth::concurrency
