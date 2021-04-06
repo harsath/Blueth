@@ -15,8 +15,9 @@ set(
 	net/TransportHelpers.hpp
 	)
 set(
-	OTHER_UTIL
-	simd.hpp
+	UTILS
+	utils/simd.hpp
+	utils/UnixTime.hpp
 	)
 set(
 	HTTP
@@ -34,7 +35,7 @@ add_library(
 	${NET_DIR_FILES} 
 	${IO_DIR_FILES}
 	${CONCURRENCY}
-	${OTHER_UTIL}
+	${UTILS}
 	)
 set_target_properties(
 	${LIB_NAME}
