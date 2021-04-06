@@ -18,13 +18,6 @@ enum class HTTPRequestType { Get, Post, Head, Put, Unsupported };
 
 enum class HTTPServerType { PlaintextServer, SSLServer };
 
-enum class StreamType {
-	SSLSyncStream,
-	SSLAsyncStream,
-	SyncStream,
-	AsyncStream
-};
-
 enum class HTTPVersion { HTTP1_1, HTTP_2 };
 
 enum class ParserState {
