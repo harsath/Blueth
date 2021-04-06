@@ -13,6 +13,7 @@ set(
 	NET_DIR_FILES
 	net/Socket.hpp
 	net/TransportHelpers.hpp
+	net/NetworkStream.hpp
 	)
 set(
 	UTILS
