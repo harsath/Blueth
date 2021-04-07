@@ -82,7 +82,7 @@ EventLoopFactory(EventLoopImpl event_loop, int sock_fd = 0,
 		return std::make_unique<AsyncEpollEventLoop<PeerState>>(
 		    sock_fd, num_events);
 	}
-	throw new std::invalid_argument(
+	throw std::invalid_argument(
 	    "invalid argument to EventLoopFactory function");
 }
 
@@ -95,20 +95,20 @@ AsyncEpollEventLoop<PeerState>::AsyncEpollEventLoop(
 	epoll_fd_ = ::epoll_create1(0);
 	if (epoll_fd_ == -1) {
 		std::perror("epoll_create1");
-		throw new std::runtime_error("epoll_create1");
+		throw std::runtime_error("epoll_create1");
 	}
 	accept_event_.events = EPOLLIN;
 	accept_event_.data.ptr = new PeerStateHolder<PeerState>();
 	((PeerStateHolder<PeerState>*)(accept_event_.data.ptr))->setFD(server_sock_);
 	if (::epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, server_sock_, &accept_event_)) {
 		std::perror("epoll_ctl EPOLL_CTL_ADD");
-		throw new std::runtime_error("epoll_ctl EPOLL_CTL_ADD");
+		throw std::runtime_error("epoll_ctl EPOLL_CTL_ADD");
 	}
 	events_ =
 	    (epoll_event*)calloc(max_events_supported_, sizeof(epoll_event));
 	if (events_ == nullptr) {
 		std::perror("calloc()");
-		throw new std::bad_alloc();
+		throw std::bad_alloc();
 	}
 }
 // clang-format on
@@ -124,7 +124,7 @@ void AsyncEpollEventLoop<PeerState>::registerCallbackForEvent(
 	} else if (event == EventType::AcceptEvent) {
 		on_accept_callback_ = std::move(callback);
 	} else {
-		throw new std::runtime_error(
+		throw std::runtime_error(
 		    "Invaild argument to callback register function");
 	}
 }
@@ -149,7 +149,7 @@ void AsyncEpollEventLoop<PeerState>::startEventloop() noexcept(false) {
 							continue;
 						}else{
 							std::perror("accept");
-							throw new std::runtime_error("accept()");
+							throw std::runtime_error("accept()");
 						}
 					}
 					net::makeSocketNonBlocking(client_sock);
@@ -166,7 +166,7 @@ void AsyncEpollEventLoop<PeerState>::startEventloop() noexcept(false) {
 					}
 					if(::epoll_ctl(epoll_fd_, EPOLL_CTL_ADD, client_sock, &event) < 0){
 						std::perror("epoll_ctl EPOLL_CTL_ADD");
-						throw new std::runtime_error("epoll_ctl");
+						throw std::runtime_error("epoll_ctl");
 					}
 				}else{
 					FDStatus read_return = this->on_read_callback_((PeerStateHolder<PeerState>*)events_[i].data.ptr);
@@ -181,7 +181,7 @@ void AsyncEpollEventLoop<PeerState>::startEventloop() noexcept(false) {
 					}
 					if(::epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, peer_fd, &event) < 0){
 						std::perror("epoll_ctl EPOLL_CTL_MOD");
-						throw new std::runtime_error("epoll_ctl EPOLL_CTL_MOD");
+						throw std::runtime_error("epoll_ctl EPOLL_CTL_MOD");
 					}
 				}
 			}else if(events_[i].events & EPOLLOUT){
@@ -197,7 +197,7 @@ void AsyncEpollEventLoop<PeerState>::startEventloop() noexcept(false) {
 				}
 				if(::epoll_ctl(epoll_fd_, EPOLL_CTL_MOD, peer_fd, &event)){
 					std::perror("epoll_ctl EPOLL_CTL_MOD");
-					throw new std::runtime_error("epoll_ctl EPOLL_CTL_ADD");
+					throw std::runtime_error("epoll_ctl EPOLL_CTL_ADD");
 				}
 			}
 		}
