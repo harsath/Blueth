@@ -53,7 +53,10 @@ template <typename BufferType> class NetworkStream {
 	 *
 	 * @param read_length Read length parameter
 	 * by which we can specify the number bytes we need to read from an
-	 * endpoint
+	 * endpoint. This is mainly used to see if the bytes capacity of the
+	 * IOBuffer is high enough to hold the request bytes read from wire. If
+	 * there is less space on the IOBuffer than we need to read, we increase
+	 * the memory capacity of the IOBuffer
 	 * @param Returns number of bytes read on sucess and negative value on
 	 * failur. We assume that a user had a logic to handle the failur in a
 	 * graceful way on their logic
