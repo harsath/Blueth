@@ -146,21 +146,21 @@ class IOBuffer {
 	/**
 	 * Return the pointer to start underlying buffer
 	 */
-	constexpr const_pointer_type getBuffer() const noexcept;
+	constexpr pointer_type getBuffer() noexcept;
 	/**
 	 * Return the pointer to end of underlying buffer
 	 */
-	constexpr const_pointer_type getBufferEnd() const noexcept;
+	constexpr pointer_type getBufferEnd() noexcept;
 	/**
 	 * Get a pointer to start offset of actual working
 	 * data(internal_buffer_(start_offset_))
 	 */
-	constexpr const_pointer_type getStartOffsetPointer() const noexcept;
+	constexpr pointer_type getStartOffsetPointer() noexcept;
 	/**
 	 * Get a pointer to end offset of actual working
 	 * data(internal_buffer_(end_offset_))
 	 */
-	constexpr const_pointer_type getEndOffsetPointer() const noexcept;
+	constexpr pointer_type getEndOffsetPointer() noexcept;
 	/**
 	 * Get current internal capacity of underlying buffer
 	 */
@@ -174,13 +174,10 @@ class IOBuffer {
 	 * Get actual working data/buffer's size (end_offset - start_offset)
 	 */
 	constexpr size_type getDataSize() const noexcept;
-
 	constexpr iterator begin() noexcept;
 	constexpr iterator end() noexcept;
 	constexpr const_iterator cbegin() const noexcept;
 	constexpr const_iterator cend() const noexcept;
-
-      private:
 	/**
 	 * Allocate the memory to the underlying buffer
 	 *
@@ -285,26 +282,26 @@ IOBuffer<T, U>::getCapacity() const noexcept {
 }
 
 template <typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline constexpr typename IOBufTraits<T>::const_pointer_type
-IOBuffer<T, U>::getBuffer() const noexcept {
+inline constexpr typename IOBufTraits<T>::pointer_type
+IOBuffer<T, U>::getBuffer() noexcept {
 	return internal_buffer_;
 }
 
 template <typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline constexpr typename IOBufTraits<T>::const_pointer_type
-IOBuffer<T, U>::getStartOffsetPointer() const noexcept {
+inline constexpr typename IOBufTraits<T>::pointer_type
+IOBuffer<T, U>::getStartOffsetPointer() noexcept {
 	return internal_buffer_ + start_offset_;
 }
 
 template <typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline constexpr typename IOBufTraits<T>::const_pointer_type
-IOBuffer<T, U>::getEndOffsetPointer() const noexcept {
+inline constexpr typename IOBufTraits<T>::pointer_type
+IOBuffer<T, U>::getEndOffsetPointer() noexcept {
 	return internal_buffer_ + end_offset_;
 }
 
 template <typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
-inline constexpr typename IOBufTraits<T>::const_pointer_type
-IOBuffer<T, U>::getBufferEnd() const noexcept {
+inline constexpr typename IOBufTraits<T>::pointer_type
+IOBuffer<T, U>::getBufferEnd() noexcept {
 	return (internal_buffer_ + capacity_ - 1);
 }
 
@@ -381,7 +378,7 @@ inline constexpr void IOBuffer<T, U>::appendRawBytes(
 		::memcpy(internal_buffer_ + end_offset_, data, size);
 		end_offset_ += size;
 	} else {
-		reserve(size);
+		reserve(capacity_ + size);
 		appendRawBytes(data, size);
 	}
 }
@@ -396,9 +393,9 @@ inline constexpr void IOBuffer<T, U>::appendRawBytes(
 			 io_buffer.getDataSize());
 		end_offset_ += io_buffer.getDataSize();
 	} else {
-		reserve(io_buffer.getDataSize());
+		reserve(io_buffer.getCapacity());
 		appendRawBytes(io_buffer);
 	}
 }
 
-} // !blueth::io
+} // namespace blueth::io

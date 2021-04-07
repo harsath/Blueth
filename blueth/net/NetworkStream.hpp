@@ -14,6 +14,8 @@ enum class StreamType {
 
 enum class StreamMode { Client, Server };
 
+enum class StreamProtocol { TCP, UDP };
+
 /**
  * A stream is a reliable data transfer channel of bytes between endpoints and
  * it makes suer Wsure that the bytes are read and written in the order given in
@@ -30,6 +32,7 @@ enum class StreamMode { Client, Server };
  * invokeCallbacks method.
  */
 template <typename BufferType> class NetworkStream {
+      public:
 	using buffer_type = std::unique_ptr<io::IOBuffer<BufferType>>;
 	using const_buffer_type = std::unique_ptr<io::IOBuffer<BufferType>>;
 	using buffer_reference_type =
@@ -37,7 +40,6 @@ template <typename BufferType> class NetworkStream {
 	using const_buffer_reference_type =
 	    const std::unique_ptr<io::IOBuffer<BufferType>> &;
 
-      public:
 	/**
 	 * Read raw bytes into the io_buffer from the network wire.
 	 *
@@ -49,15 +51,17 @@ template <typename BufferType> class NetworkStream {
 	 * If we invoke the streamRead method with an invalid internal IOBuffer
 	 * object, an exception of type std::runtime_error is thrown
 	 *
-	 * @param optional_read_length This is an optional read length parameter
+	 * @param read_length Read length parameter
 	 * by which we can specify the number bytes we need to read from an
-	 * endpoint
+	 * endpoint. This is mainly used to see if the bytes capacity of the
+	 * IOBuffer is high enough to hold the request bytes read from wire. If
+	 * there is less space on the IOBuffer than we need to read, we increase
+	 * the memory capacity of the IOBuffer
 	 * @param Returns number of bytes read on sucess and negative value on
 	 * failur. We assume that a user had a logic to handle the failur in a
 	 * graceful way on their logic
 	 */
-	virtual int
-	streamRead(size_t optional_read_length = 0) noexcept(false) = 0;
+	virtual int streamRead(size_t read_length) noexcept(false) = 0;
 	/**
 	 * Write raw bytes from IOBuffer onto the endpoint on wire
 	 *
@@ -76,16 +80,16 @@ template <typename BufferType> class NetworkStream {
 	 */
 	virtual int streamWrite() noexcept(false) = 0;
 	/**
-	 * Flush the internal IOBuffer object's content but the object itself is
-	 * not destroyed and the capaciy is same as the lasttime, except the
-	 * buffer is empty or doesn't hold any valid data since it's "fresh"
-	 * once more.
+	 * Flush the internal IOBuffer object's data/contents but the object
+	 * itself is not destroyed and the capaciy is same as the lasttime,
+	 * except the buffer is empty or doesn't hold any valid data since it's
+	 * "fresh" once more.
 	 *
 	 * If we make this operation on an invalid IOBuffer, which is either
 	 * moved somewhere explicitly by the user when we called getIOBuffer, an
 	 * exception of type std::runtime_error is thrown
 	 */
-	virtual void flush() noexcept(false) = 0;
+	virtual void flushBuffer() noexcept(false) = 0;
 	/**
 	 * Get the internal IOBuffer and move the ownership to the caller. After
 	 * this operation, the IOBuffer moved the ownership to the caller.
@@ -101,10 +105,14 @@ template <typename BufferType> class NetworkStream {
 	 * Get a Const-Ref Unique pointer to IOBuffer. This call does not modify
 	 * or transfer the ownership of the underlying IOBuffer object
 	 *
+	 * We throw an exception of type std::runtime_error if someone tries to
+	 * call this method after they invalidated the buffer either throw
+	 * calling getIOBuffer, since we moved the ownership.
+	 *
 	 * @return Const version of the underlying IOBuffer
 	 */
-	virtual const_buffer_reference_type
-	constGetIOBuffer() const noexcept = 0;
+	virtual const_buffer_reference_type constGetIOBuffer() const
+	    noexcept(false) = 0;
 	/**
 	 * Set a io_buffer object as an underlying buffer for reading/writing
 	 * onto the network.
@@ -131,6 +139,13 @@ template <typename BufferType> class NetworkStream {
 	 * @return Value of type StreamMode
 	 */
 	virtual StreamMode getStreamMode() const noexcept = 0;
+	/**
+	 * Get the stream protocol(TCP or UDP) the instance of this interface
+	 * supports
+	 *
+	 * @return Value of type StreamProtocol
+	 */
+	virtual StreamProtocol getStreamProtocol() const noexcept = 0;
 	/**
 	 * Set a Callable object which needs to be optionally invoked when we
 	 * read some bytes into IOBuffer from wire.
@@ -162,6 +177,29 @@ template <typename BufferType> class NetworkStream {
 	virtual void
 	setWriteCallback(std::function<void(const_buffer_reference_type)>
 			     callable) noexcept = 0;
+	/**
+	 * Get the internal callback function which is registered as the read
+	 * callback
+	 *
+	 * @return std::function object callback
+	 */
+	virtual std::function<void(const_buffer_reference_type)>
+	getReadCallback() const noexcept = 0;
+	/**
+	 * Get the internal callback function which is registered as the write
+	 * callback
+	 *
+	 * @return std::function object callback
+	 */
+	virtual std::function<void(const_buffer_reference_type)>
+	getWriteCallback() const noexcept = 0;
+	/**
+	 * Close the network connection with the peer
+	 *
+	 * If an error occured during the operation, an exception of type
+	 * std::runtime_error is thrown
+	 */
+	virtual void closeConnection() noexcept(false) = 0;
 	virtual ~NetworkStream() = default;
 };
 

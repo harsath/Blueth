@@ -14,6 +14,7 @@ set(
 	net/Socket.hpp
 	net/TransportHelpers.hpp
 	net/NetworkStream.hpp
+	net/SyncNetworkStreamClient.hpp
 	)
 set(
 	UTILS
