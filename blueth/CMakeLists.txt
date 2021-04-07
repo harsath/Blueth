@@ -13,10 +13,13 @@ set(
 	NET_DIR_FILES
 	net/Socket.hpp
 	net/TransportHelpers.hpp
+	net/NetworkStream.hpp
+	net/SyncNetworkStreamClient.hpp
 	)
 set(
-	OTHER_UTIL
-	simd.hpp
+	UTILS
+	utils/simd.hpp
+	utils/UnixTime.hpp
 	)
 set(
 	HTTP
@@ -24,12 +27,17 @@ set(
 	http/http_headers.hpp
 	http/http_constants.hpp
 	)
+set(
+	CONCURRENCY
+	concurrency/AsyncEventLoop.hpp
+)
 add_library(
 	${LIB_NAME} 
 	STATIC ${CONTAINER_DIR_FILES}
 	${NET_DIR_FILES} 
 	${IO_DIR_FILES}
-	${OTHER_UTIL}
+	${CONCURRENCY}
+	${UTILS}
 	)
 set_target_properties(
 	${LIB_NAME}

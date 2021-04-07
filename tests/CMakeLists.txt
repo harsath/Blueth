@@ -1,3 +1,4 @@
 add_subdirectory(./test-containers)
 add_subdirectory(./test-io)
 add_subdirectory(./test-http)
+add_subdirectory(./test-concurrency)

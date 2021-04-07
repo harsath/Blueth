@@ -47,23 +47,20 @@ class Socket {
 	Socket(Socket &&);
 	Socket() = default;
 	Socket &operator=(Socket &&);
-	void set_socket_options(SockOptLevel sock_level,
-				SocketOptions sock_opt) noexcept;
-	const std::string &get_ip() const noexcept;
-	const std::uint16_t &get_port() const noexcept;
-	const int get_socket_backlog() const noexcept;
-	const Domain get_socket_domain() const noexcept;
-	const int get_file_descriptor() const noexcept;
-	const int accept_loop();
+	void setSocketOption(SockOptLevel sock_level,
+			     SocketOptions sock_opt) noexcept;
+	const std::string &getIP() const noexcept;
+	const std::uint16_t &getPort() const noexcept;
+	const int getSocketBacklog() const noexcept;
+	const Domain getSocketDomain() const noexcept;
+	const int getFileDescriptor() const noexcept;
+	const int acceptLoop();
 	// Possable we can replace `char*` with an implementation of a IOBuffer
 	// object in future
-	void read_buff(char *read_buffer, std::size_t max_read_buff);
-	void write_buff(const char *write_buffer, std::size_t write_size);
-	void bind_sock() noexcept;
-	void make_socket_nonblocking();
-	void close_serving_client_connection() noexcept;
-	std::string get_serving_client_ip() noexcept;
-
+	void readBuffer(char *read_buffer, std::size_t max_read_buff);
+	void writeBuffer(const char *write_buffer, std::size_t write_size);
+	void bindSock() noexcept;
+	void makeSocketNonBlocking() noexcept(false);
 	~Socket();
 
       protected:
@@ -107,8 +104,8 @@ inline Socket::Socket(const std::string &IP_addr, const std::uint16_t &port,
 	m_create_socket();
 }
 
-inline void Socket::set_socket_options(SockOptLevel sock_level,
-				       SocketOptions sock_opt) noexcept {
+inline void Socket::setSocketOption(SockOptLevel sock_level,
+				    SocketOptions sock_opt) noexcept {
 	int optval = 1;
 	int ret_code =
 	    ::setsockopt(_file_des, static_cast<int>(sock_level),
@@ -128,7 +125,7 @@ inline void Socket::m_create_socket() {
 	_endpoint_sock_len = sizeof(_server_sockaddr);
 }
 
-inline void Socket::bind_sock() noexcept {
+inline void Socket::bindSock() noexcept {
 	int ret_code =
 	    ::bind(_file_des, reinterpret_cast<sockaddr *>(&_server_sockaddr),
 		   sizeof(sockaddr_in));
@@ -136,34 +133,35 @@ inline void Socket::bind_sock() noexcept {
 	m_listen_socket();
 }
 
-inline void Socket::read_buff(char *read_buffer, std::size_t max_read_buff) {
+inline void Socket::readBuffer(char *read_buffer, std::size_t max_read_buff) {
 	// TODO: implementation of a IOBuffer object for handling the raw bytes
 	// into iteratable object. Currently in Blocking IO
+	//
+	// UPDATE: We use a 'async-stream' and 'sync-stream' whose
+	// implementation we use the IOBUffer
 	read_data(_file_des, read_buffer, max_read_buff, 0);
 }
 
-inline void Socket::write_buff(const char *write_buffer,
-			       std::size_t write_size) {
+inline void Socket::writeBuffer(const char *write_buffer,
+				std::size_t write_size) {
 	write_data(_file_des, write_buffer, write_size, 0);
 }
 
-inline const std::string &Socket::get_ip() const noexcept { return _IP_addr; }
+inline const std::string &Socket::getIP() const noexcept { return _IP_addr; }
 
-inline const std::uint16_t &Socket::get_port() const noexcept { return _port; }
+inline const std::uint16_t &Socket::getPort() const noexcept { return _port; }
 
-inline const int Socket::get_socket_backlog() const noexcept {
+inline const int Socket::getSocketBacklog() const noexcept {
 	return _endpoint_backlog;
 }
 
-inline const Domain Socket::get_socket_domain() const noexcept {
-	return _domain;
-}
+inline const Domain Socket::getSocketDomain() const noexcept { return _domain; }
 
-inline const int Socket::get_file_descriptor() const noexcept {
+inline const int Socket::getFileDescriptor() const noexcept {
 	return _file_des;
 }
 
-inline void Socket::make_socket_nonblocking() {
+inline void Socket::makeSocketNonBlocking() noexcept(false) {
 	int flags = ::fcntl(_file_des, F_GETFL, 0);
 	if (flags == -1) { throw std::runtime_error("fnctl() F_GETFL"); }
 	int ret = ::fcntl(_file_des, F_SETFL, flags | O_NONBLOCK);
@@ -172,4 +170,11 @@ inline void Socket::make_socket_nonblocking() {
 
 inline Socket::~Socket() { ::close(_file_des); }
 
-} // !blueth::net
+static void makeSocketNonBlocking(int socket) noexcept(false) {
+	int flags = ::fcntl(socket, F_GETFL, 0);
+	if(flags == -1){ throw std::runtime_error("fnctl() F_GETFL"); }
+	int ret = ::fcntl(socket, F_SETFL, flags | O_NONBLOCK);
+	if(ret == -1){ throw std::runtime_error("fcntl() O_NONBLOCK"); }
+}
+
+} // namespace blueth::net
