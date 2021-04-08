@@ -5,7 +5,7 @@ use constant {
 	COMPILER_FLAGS => "-Wall -O2 -g",
 	CC => "gcc-9",
 	CXX => "g++-9",
-	USE_CMAKE => 0
+	USE_MAKE => 1
 };
 
 unless ($#ARGV+1 == 1){ 
@@ -27,7 +27,7 @@ sub build_binary {
 	mkdir($BUILD_DIR);
 	chdir($BUILD_DIR);
 	my $compiler_cmd = "CC=".CC." && CXX=".CXX." cmake -D CMAKE_CXX_FLAGS=\"".COMPILER_FLAGS."\"";
-	if(!USE_CMAKE){ $compiler_cmd .= " -GNinja $project_root && ninja "; }
+	if(!USE_MAKE){ $compiler_cmd .= " -GNinja $project_root && ninja "; }
 	else{ $compiler_cmd .= " $project_root && make"; }
 	my $exit_code = system($compiler_cmd);
 	return $exit_code;

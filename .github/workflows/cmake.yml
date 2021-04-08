@@ -35,4 +35,5 @@ jobs:
                         - name: Configuring and Build
                           shell: bash
                           run: |
-                                  perl ci/make_run_tests.pl _build
+                                 perl ci/install_dependency.pl
+                                 perl ci/make_run_tests.pl _build

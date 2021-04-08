@@ -87,8 +87,8 @@ class IOBuffer {
 	~IOBuffer();
 	constexpr IOBuffer(IOBuffer &&io_buffer) noexcept;
 	constexpr IOBuffer &operator=(IOBuffer &&io_buffer) noexcept;
-	IOBuffer(const IOBuffer &) = delete;
-	IOBuffer &operator=(const IOBuffer &) = delete;
+	IOBuffer(IOBuffer &) = delete;
+	IOBuffer &operator=(IOBuffer &) = delete;
 	/**
 	 * Update the start offset of the underlying buffer
 	 *
@@ -97,7 +97,7 @@ class IOBuffer {
 	 */
 	constexpr void setStartOffset(int offset_len) noexcept;
 	constexpr void modifyStartOffset(int offset_len) noexcept;
-	constexpr size_type getStartOffset() const noexcept;
+	constexpr size_type getStartOffset() noexcept;
 	/**
 	 * Update the end offset of the underlying buffer
 	 *
@@ -155,7 +155,7 @@ class IOBuffer {
 	 * Get a pointer to start offset of actual working
 	 * data(internal_buffer_(start_offset_))
 	 */
-	constexpr pointer_type getStartOffsetPointer() noexcept;
+	constexpr pointer_type getStartOffsetPointer() const noexcept;
 	/**
 	 * Get a pointer to end offset of actual working
 	 * data(internal_buffer_(end_offset_))
@@ -235,7 +235,7 @@ inline void IOBuffer<T, U>::reserve(
 
 template <typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::size_type
-IOBuffer<T, U>::getStartOffset() const noexcept {
+IOBuffer<T, U>::getStartOffset() noexcept {
 	return start_offset_;
 }
 
@@ -289,7 +289,7 @@ IOBuffer<T, U>::getBuffer() noexcept {
 
 template <typename T, std::enable_if_t<is_byte_type<T>::value, bool> U>
 inline constexpr typename IOBufTraits<T>::pointer_type
-IOBuffer<T, U>::getStartOffsetPointer() noexcept {
+IOBuffer<T, U>::getStartOffsetPointer() const noexcept {
 	return internal_buffer_ + start_offset_;
 }
 
