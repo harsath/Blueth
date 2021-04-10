@@ -74,11 +74,16 @@ template <typename BufferType> class NetworkStream {
 	 * reading-into before invoking this method, an exception of type
 	 * std::runtime_error is thrown
 	 *
+	 * @param data Write the data in the std::string onto the endpoint.
+	 * Internally the data is moved to a IOBuffer before sending off the
+	 * wire
 	 * @return Returns number of bytes written on success and a negative
 	 * value if the operation fails. We assume that a user had a logic to
 	 * handle the failur in a graceful way on their logic
 	 */
-	virtual int streamWrite() noexcept(false) = 0;
+	virtual int streamWrite(const std::string &data) noexcept(false) = 0;
+	// TODO: Maybe use std::string_view for the 'data'? since we only need
+	// Ptr and Size of memory
 	/**
 	 * Flush the internal IOBuffer object's data/contents but the object
 	 * itself is not destroyed and the capaciy is same as the lasttime,
