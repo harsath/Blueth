@@ -36,4 +36,4 @@ jobs:
                           shell: bash
                           run: |
                                  perl ci/install_dependency.pl
-                                 perl ci/make_run_tests.pl _build
+                                 REMOTE_TEST_RUN=1 perl ci/make_run_tests.pl _build

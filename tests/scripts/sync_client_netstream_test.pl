@@ -4,11 +4,9 @@ use strict;
 use IO::Socket::INET;
 use Term::ANSIColor;
 
-print "Running test for SyncClientNetworkStream from $0: ";
-
 # Server configuration
 use constant {
-	Port => 9876,
+	Port => 1234,
 	ListenHost => "localhost",
 	Protocol => "tcp",
 };
@@ -37,9 +35,9 @@ while(1){
 
 chomp($inputBuffer);
 if($inputBuffer eq ExpectedInput){
-	print color("green"), "Passed", color("reset"), "\n";
+	print $0, " => ", color("green"), "Passed", color("reset"), "\n";
 	print $clientReader OutputToWrite;
 }else{
-	print color("red"), "Failed", color("reset"), "\n";
+	print $0, " => ", color("red"), "Failed", color("reset"), "\n";
 }
 close $clientReader;

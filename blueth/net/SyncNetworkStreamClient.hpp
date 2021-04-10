@@ -9,9 +9,12 @@
 #include <functional>
 #include <memory>
 #include <netdb.h>
+#include <netinet/in.h>
 #include <stdexcept>
+#include <strings.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <utility>
 
 namespace blueth::net {
 
@@ -32,31 +35,36 @@ class SyncNetworkStreamClient final : public NetworkStream<char> {
 
       public:
 	constexpr static std::size_t default_io_buffer_size = 2048;
-	SyncNetworkStreamClient(std::string endpoint_ip,
+	static std::unique_ptr<NetworkStream<char>>
+	create(std::string &&endpoint_host, std::uint16_t &&endpoint_port,
+	       StreamProtocol &&stream_protocol) {
+		return std::make_unique<SyncNetworkStreamClient>(
+		    std::forward<std::string>(endpoint_host),
+		    std::forward<std::uint16_t>(endpoint_port),
+		    std::forward<StreamProtocol>(stream_protocol));
+	}
+	SyncNetworkStreamClient(std::string endpoint_host,
 				std::uint16_t endpoint_port,
 				StreamProtocol stream_protocol) noexcept(false);
 	int streamRead(size_t read_length) noexcept(false) override;
-	int streamWrite() noexcept(false) override;
-	BLUETH_FORCE_INLINE void flushBuffer() noexcept(false) override;
-	BLUETH_FORCE_INLINE BLUETH_NODISCARD buffer_type
-	getIOBuffer() noexcept(false) override;
-	BLUETH_FORCE_INLINE BLUETH_NODISCARD const_buffer_reference_type
-	constGetIOBuffer() const noexcept(false) override;
-	BLUETH_FORCE_INLINE void
-	setIOBuffer(buffer_type io_buffer) noexcept override;
-	BLUETH_FORCE_INLINE StreamType getStreamType() const noexcept override;
-	BLUETH_FORCE_INLINE StreamMode getStreamMode() const noexcept override;
-	BLUETH_FORCE_INLINE StreamProtocol
-	getStreamProtocol() const noexcept override;
-	BLUETH_FORCE_INLINE void setReadCallback(
+	int streamWrite(const std::string &data) noexcept(false) override;
+	void flushBuffer() noexcept(false) override;
+	BLUETH_NODISCARD buffer_type getIOBuffer() noexcept(false) override;
+	BLUETH_NODISCARD const_buffer_reference_type constGetIOBuffer() const
+	    noexcept(false) override;
+	void setIOBuffer(buffer_type io_buffer) noexcept override;
+	StreamType getStreamType() const noexcept override;
+	StreamMode getStreamMode() const noexcept override;
+	StreamProtocol getStreamProtocol() const noexcept override;
+	void setReadCallback(
 	    std::function<void(const_buffer_reference_type)>) noexcept override;
-	BLUETH_FORCE_INLINE void setWriteCallback(
+	void setWriteCallback(
 	    std::function<void(const_buffer_reference_type)>) noexcept override;
-	BLUETH_FORCE_INLINE std::function<void(const_buffer_reference_type)>
+	std::function<void(const_buffer_reference_type)>
 	getReadCallback() const noexcept override;
-	BLUETH_FORCE_INLINE std::function<void(const_buffer_reference_type)>
+	std::function<void(const_buffer_reference_type)>
 	getWriteCallback() const noexcept override;
-	BLUETH_FORCE_INLINE void closeConnection() noexcept(false) override;
+	void closeConnection() noexcept(false) override;
 	~SyncNetworkStreamClient();
 };
 
@@ -66,38 +74,33 @@ SyncNetworkStreamClient::SyncNetworkStreamClient(
     : endpoint_host_{std::move(endpoint_host)}, endpoint_port_{endpoint_port},
       stream_protocol_{stream_protocol}, stream_mode_{StreamMode::Client},
       stream_type_{StreamType::SyncStream} {
-	::addrinfo hints, *server_info, *temp;
 	::hostent *hoste;
-	std::memset(&hints, 0, sizeof(hints));
-	hints.ai_family = AF_UNSPEC;
-	if (stream_protocol == StreamProtocol::TCP) {
-		hints.ai_socktype = SOCK_STREAM;
-	} else if (stream_protocol == StreamProtocol::UDP) {
-		hints.ai_socktype = SOCK_DGRAM;
-	}
-	int return_val;
-	if ((return_val = ::getaddrinfo(endpoint_host_.c_str(), nullptr, &hints,
-					&server_info))) {
-		std::perror("getaddrinfo");
+	::sockaddr_in addr;
+	if ((hoste = ::gethostbyname(endpoint_host_.c_str())) == nullptr) {
 		throw std::runtime_error{std::strerror(errno)};
 	}
-	temp = server_info;
-	for (; temp != nullptr; temp = temp->ai_next) {
-		if ((endpoint_fd_ = ::socket(temp->ai_family, temp->ai_socktype,
-					     temp->ai_protocol)) == -1) {
-			continue;
-		}
-		if (::connect(endpoint_fd_, temp->ai_addr, temp->ai_addrlen) ==
-		    -1) {
-			continue;
-		}
-		break;
+	if (stream_protocol_ == StreamProtocol::TCP) {
+		endpoint_fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
+	} else if (stream_protocol_ == StreamProtocol::UDP) {
+		endpoint_fd_ = ::socket(AF_INET, SOCK_DGRAM, 0);
+	} else {
+		throw std::runtime_error{"invalid StreamProtocol"};
 	}
-	if (temp == nullptr) {
-		std::perror("socket/connect");
+	if (endpoint_fd_ < 0) {
+		std::perror("socket()");
 		throw std::runtime_error{std::strerror(errno)};
 	}
-	::freeaddrinfo(server_info);
+	addr.sin_addr = *(reinterpret_cast<::in_addr *>(hoste->h_addr));
+	addr.sin_port = ::htons(endpoint_port_);
+	addr.sin_family = AF_INET;
+	::bzero(addr.sin_zero, 8);
+	int connect_ret =
+	    ::connect(endpoint_fd_, reinterpret_cast<sockaddr *>(&addr),
+		      sizeof(sockaddr));
+	if (connect_ret < 0) {
+		std::perror("connect()");
+		throw std::runtime_error{std::strerror(errno)};
+	}
 	io_buffer_ = io::IOBuffer<char>::create(default_io_buffer_size);
 	connected_time_ = UnixTime();
 	is_connected_ = true;
@@ -110,19 +113,24 @@ int SyncNetworkStreamClient::streamRead(size_t read_length) noexcept(false) {
 	}
 	if (read_length > io_buffer_->getAvailableSpace())
 		io_buffer_->reserve(io_buffer_->getCapacity() + read_length);
-	int read_ret = ::recv(endpoint_fd_, io_buffer_->getStartOffsetPointer(),
+	char temp_buffer[io_buffer_->getAvailableSpace()];
+	int read_ret = ::recv(endpoint_fd_, temp_buffer,
 			      io_buffer_->getAvailableSpace(), 0);
 	if (read_ret < 0) return read_ret;
-	io_buffer_->modifyStartOffset(read_ret);
+	io_buffer_->appendRawBytes(temp_buffer, read_ret);
 	if (read_callback_) read_callback_(io_buffer_);
 	return read_ret;
 }
 
-int SyncNetworkStreamClient::streamWrite() noexcept(false) {
+int SyncNetworkStreamClient::streamWrite(const std::string &data) noexcept(
+    false) {
 	if (!io_buffer_ || !is_connected_) {
 		throw std::runtime_error{"invalid IOBuffer or the connection "
 					 "to the endpoint is closed"};
 	}
+	if (io_buffer_->getAvailableSpace() <= data.size())
+		io_buffer_->reserve(io_buffer_->getCapacity() + data.size());
+	io_buffer_->appendRawBytes(data.c_str(), data.size());
 	/// We have nothing to write onto the endpoint, so we return 0
 	/// indicating we didn't write anything on the wire
 	if (io_buffer_->getDataSize() == 0) { return 0; }
@@ -130,13 +138,12 @@ int SyncNetworkStreamClient::streamWrite() noexcept(false) {
 	    ::send(endpoint_fd_, io_buffer_->getStartOffsetPointer(),
 		   io_buffer_->getDataSize(), 0);
 	if (write_ret < 0) return write_ret;
-	io_buffer_->modifyEndOffset(write_ret);
+	io_buffer_->modifyStartOffset(write_ret);
 	if (write_callback_) write_callback_(io_buffer_);
 	return write_ret;
 }
 
-BLUETH_FORCE_INLINE void
-SyncNetworkStreamClient::flushBuffer() noexcept(false) {
+void SyncNetworkStreamClient::flushBuffer() noexcept(false) {
 	if (!io_buffer_) { throw std::runtime_error{"invalid IOBuffer"}; }
 	io_buffer_->clear();
 }
@@ -149,57 +156,50 @@ SyncNetworkStreamClient::getIOBuffer() noexcept(false) {
 	return std::move(temp_buffer_holder);
 }
 
-BLUETH_FORCE_INLINE
 BLUETH_NODISCARD SyncNetworkStreamClient::const_buffer_reference_type
 SyncNetworkStreamClient::constGetIOBuffer() const noexcept(false) {
 	return io_buffer_;
 }
 
-BLUETH_FORCE_INLINE void SyncNetworkStreamClient::setIOBuffer(
+void SyncNetworkStreamClient::setIOBuffer(
     SyncNetworkStreamClient::buffer_type io_buffer) noexcept {
 	io_buffer_ = std::move(io_buffer);
 }
 
-BLUETH_FORCE_INLINE StreamType
-SyncNetworkStreamClient::getStreamType() const noexcept {
+StreamType SyncNetworkStreamClient::getStreamType() const noexcept {
 	return stream_type_;
 }
 
-BLUETH_FORCE_INLINE StreamMode
-SyncNetworkStreamClient::getStreamMode() const noexcept {
+StreamMode SyncNetworkStreamClient::getStreamMode() const noexcept {
 	return stream_mode_;
 }
 
-BLUETH_FORCE_INLINE StreamProtocol
-SyncNetworkStreamClient::getStreamProtocol() const noexcept {
+StreamProtocol SyncNetworkStreamClient::getStreamProtocol() const noexcept {
 	return stream_protocol_;
 }
 
-BLUETH_FORCE_INLINE void SyncNetworkStreamClient::setReadCallback(
+void SyncNetworkStreamClient::setReadCallback(
     std::function<void(SyncNetworkStreamClient::const_buffer_reference_type)>
 	callback_fn) noexcept {
 	read_callback_ = std::move(callback_fn);
 }
 
-BLUETH_FORCE_INLINE void SyncNetworkStreamClient::setWriteCallback(
+void SyncNetworkStreamClient::setWriteCallback(
     std::function<void(const_buffer_reference_type)> callback_fn) noexcept {
 	write_callback_ = std::move(callback_fn);
 }
 
-BLUETH_FORCE_INLINE
 std::function<void(SyncNetworkStreamClient::const_buffer_reference_type)>
 SyncNetworkStreamClient::getReadCallback() const noexcept {
 	return read_callback_;
 }
 
-BLUETH_FORCE_INLINE
 std::function<void(SyncNetworkStreamClient::const_buffer_reference_type)>
 SyncNetworkStreamClient::getWriteCallback() const noexcept {
 	return write_callback_;
 }
 
-BLUETH_FORCE_INLINE void
-SyncNetworkStreamClient::closeConnection() noexcept(false) {
+void SyncNetworkStreamClient::closeConnection() noexcept(false) {
 	if (is_connected_) {
 		int ret = ::close(endpoint_fd_);
 		if (ret < 0) { throw std::runtime_error{std::strerror(errno)}; }
