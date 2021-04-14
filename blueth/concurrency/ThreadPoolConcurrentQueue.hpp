@@ -9,7 +9,7 @@ namespace blueth::concurrency {
 
 template <typename Callable> class ThreadPoolConcurrentQueue {
       public:
-
+				
       private:
 	std::queue<Callable> queue_;
 	mutable std::mutex mutex_;

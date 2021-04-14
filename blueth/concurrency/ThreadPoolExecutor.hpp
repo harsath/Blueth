@@ -1,14 +1,19 @@
 #pragma once
-#include "ThreadPoolConcurrentQueue.hpp"
+#include "ThreadsafeQueue.hpp"
 #include "common.hpp"
+#include <array>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <utility>
 #include <vector>
 
 namespace blueth::concurrency {
 
 template <typename Callable> class ThreadPoolExecutor {
+	using ThreadPoolType =
+	    std::vector<std::pair<std::thread::id, std::thread>>;
+
       public:
 	/**
 	 * Constructor for the ThreadPoolExecutor object
@@ -84,6 +89,62 @@ template <typename Callable> class ThreadPoolExecutor {
       private:
 	void poolAndExecute();
 	std::size_t pool_size_;
+	std::size_t active_threads_{};
+	bool shutdown_{false};
+	ThreadSafeQueue<Callable> work_queue_;
+	ThreadPoolType thread_pool_;
+	std::condition_variable worker_cv_;
+	std::mutex pool_mtx_;
 };
+
+template <typename Callable>
+ThreadPoolExecutor<Callable>::ThreadPoolExecutor(std::size_t pool_size)
+    : pool_size_{pool_size} {
+	for (std::size_t i{}; i < pool_size_; ++i) {
+		std::thread thread = std::thread(
+		    &ThreadPoolExecutor<Callable>::poolAndExecute, this);
+		thread_pool_.emplace_back(thread.get_id(), std::move(thread));
+	}
+}
+
+template<typename Callable>
+void ThreadPoolExecutor<Callable>::poolAndExecute() {
+	std::unique_lock<std::mutex> worker_cv_lock{pool_mtx_, std::defer_lock};
+	while(true){
+		
+	}
+}
+
+template <typename Callable>
+std::size_t ThreadPoolExecutor<Callable>::getActiveThreads() const noexcept {
+	std::lock_guard<std::mutex> lck{pool_mtx_};
+	return active_threads_;
+}
+
+template <typename Callable>
+std::size_t ThreadPoolExecutor<Callable>::getTaskCount() const noexcept {
+	std::lock_guard<std::mutex> lck{pool_mtx_};
+	return work_queue_.size();
+}
+
+template <typename Callable>
+void ThreadPoolExecutor<Callable>::submit(
+		Callable &&callableFunction) noexcept {
+	std::lock_guard<std::mutex> lck{pool_mtx_};
+	work_queue_.push(std::forward<Callable>(callableFunction));
+	worker_cv_.notify_one();
+}
+
+template<typename Callable>
+std::size_t ThreadPoolExecutor<Callable>::getActiveThreads() const noexcept {
+	std::lock_guard<std::mutex> lck{pool_mtx_};
+	return active_threads_;
+}
+
+template <typename Callable>
+bool ThreadPoolExecutor<Callable>::isShutdown() const noexcept {
+	std::lock_guard<std::mutex> lck{pool_mtx_};
+	return shutdown_;
+}
 
 } // namespace blueth::concurrency
