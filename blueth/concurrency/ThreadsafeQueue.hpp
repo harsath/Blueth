@@ -7,16 +7,16 @@
 #include <type_traits>
 
 namespace blueth::concurrency {
-template <typename T> class thread_safe_queue {
+template <typename T> class ThreadSafeQueue {
       private:
 	std::queue<T> queue_;
 	mutable std::mutex mutex_;
 
       public:
-	thread_safe_queue() = default;
-	thread_safe_queue(const thread_safe_queue<T> &) = delete;
-	thread_safe_queue &operator=(const thread_safe_queue<T> &) = delete;
-	thread_safe_queue(thread_safe_queue<T> &&queue_move) noexcept(false) {
+	ThreadSafeQueue() = default;
+	ThreadSafeQueue(const ThreadSafeQueue<T> &) = delete;
+	ThreadSafeQueue &operator=(const ThreadSafeQueue<T> &) = delete;
+	ThreadSafeQueue(ThreadSafeQueue<T> &&queue_move) noexcept(false) {
 		std::lock_guard<std::mutex> op_lock{mutex_};
 		if (!queue_.empty()) {
 			throw std::logic_error("Moving into a non-empty queue");
