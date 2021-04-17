@@ -7,3 +7,11 @@ This dir contains 3rd-party software.
 		Copyright: Copyright 2007, Google Inc.
 		Release data: 3 Oct 2019
 
+	[2] WolfSSL:
+		wolfSSL (formerly CyaSSL) is a small, fast, portable implementation of TLS/SSL 
+		for embedded devices to the cloud.
+		Commit Hash: 830de9a9fb99e30f9ac9caa0a7f7bba29c3b4863
+		License type: GPLv2
+		Project URL: https://github.com/wolfSSL/wolfssl
+		Copyright: Copyright (C) 2006-2021 wolfSSL Inc.
+		Release date: 15 Feb 2021

@@ -8,25 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(EXEC_FILE ./main.cpp)
-
-enable_testing()
-
-add_subdirectory(./vendor/googletest)
-add_subdirectory(./blueth)
-add_subdirectory(./tests)
-
-add_executable(
-	${PROJECT_NAME}
-	${EXEC_FILE}
-	)
-
-target_link_libraries(
-	${PROJECT_NAME}
-	libblueth
-	)
-
-set_target_properties(
-	${PROJECT_NAME}
-	PROPERTIES LINKER_LANGUAGE CXX
-	)
+add_subdirectory(blueth)
+add_subdirectory(tests)
+add_subdirectory(vendor/wolfssl)
+add_subdirectory(vendor/googletest)

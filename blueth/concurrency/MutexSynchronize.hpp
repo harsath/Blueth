@@ -8,9 +8,9 @@ namespace blueth::concurrency {
 
 // clang-format off
 /**
- * This simple interface tightly couples the Mutex with it's data which it's
+ * This simple interface tightly couples the Mutex with the data which it's
  * protecting. It's mainly used for avoiding deadlocks for a concurrent reads
- * and single writes patten.
+ * and single update/write patten.
  *
  * The sample usage is as follows,
  *
