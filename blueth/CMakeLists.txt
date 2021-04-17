@@ -39,6 +39,10 @@ add_library(
 	${CONCURRENCY}
 	${UTILS}
 	)
+target_link_libraries(
+	${LIB_NAME}
+	wolfssl
+)
 set_target_properties(
 	${LIB_NAME}
 	PROPERTIES LINKER_LANGUAGE CXX
