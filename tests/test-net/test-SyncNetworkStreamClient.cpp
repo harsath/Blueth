@@ -8,7 +8,7 @@
 #include <memory>
 #include <net/SyncNetworkStreamClient.hpp>
 
-TEST(BluethNetTest, SyncNetworkStreamClientTest) {
+TEST(SyncNetworkStreamClientTest, TestOne) {
 	std::system("perl ../tests/scripts/sync_client_netstream_test.pl &");
 	using namespace blueth;
 	std::string perlSciptExpected = "Hello, it's from Perl";
