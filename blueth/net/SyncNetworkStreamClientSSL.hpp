@@ -38,13 +38,13 @@ class SyncNetworkStreamClientSSL final : public NetworkStream<char> {
 
       public:
 	constexpr static std::size_t default_io_buffer_size = 2048;
+	template <typename T1, typename T2, typename T3>
 	static std::unique_ptr<NetworkStream<char>>
-	create(std::string &&endpoint_host, std::uint16_t &&endpoint_port,
-	       StreamProtocol &&stream_protocol) {
+	create(T1 &&endpoint_host, T2 &&endpoint_port, T3 &&stream_protocol) {
 		return std::make_unique<SyncNetworkStreamClientSSL>(
-		    std::forward<std::string>(endpoint_host),
-		    std::forward<std::uint16_t>(endpoint_port),
-		    std::forward<StreamProtocol>(stream_protocol));
+		    std::forward<T1>(endpoint_host),
+		    std::forward<T2>(endpoint_port),
+		    std::forward<T3>(stream_protocol));
 	}
 	SyncNetworkStreamClientSSL(
 	    std::string endpoint_host, std::uint16_t endpoint_port,
@@ -78,10 +78,13 @@ SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
     : endpoint_host_{std::move(endpoint_host)}, endpoint_port_{endpoint_port},
       stream_protocol_{stream_protocol}, stream_mode_{StreamMode::Client},
       stream_type_{StreamType::SSLSyncStream} {
+
 	::hostent *hoste;
 	::sockaddr_in addr;
 	endpoint_fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
-	if ((hoste = ::gethostbyname(endpoint_host.c_str())) == nullptr) {
+	hoste = ::gethostbyname(endpoint_host_.c_str());
+	if (hoste == nullptr) {
+		std::perror("gethostbyname()");
 		throw std::runtime_error{std::strerror(errno)};
 	}
 	if (endpoint_fd_ < 0) {
@@ -127,7 +130,8 @@ SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
 	}
 	ret = wolfSSL_connect(ssl_.get());
 	if (ret != SSL_SUCCESS) {
-		fprintf(stderr, "Error: failed to connect to server\n");
+		fprintf(stderr, "Error: failed to connect to server: %d\n",
+			wolfSSL_get_error(ssl_.get(), ret));
 		close(endpoint_fd_);
 		throw std::runtime_error{"wolfSSL_connect()"};
 	}

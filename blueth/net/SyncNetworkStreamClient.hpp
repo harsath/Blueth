@@ -35,13 +35,13 @@ class SyncNetworkStreamClient final : public NetworkStream<char> {
 
       public:
 	constexpr static std::size_t default_io_buffer_size = 2048;
+	template <typename T1, typename T2, typename T3>
 	static std::unique_ptr<NetworkStream<char>>
-	create(std::string &&endpoint_host, std::uint16_t &&endpoint_port,
-	       StreamProtocol &&stream_protocol) {
+	create(T1 &&endpoint_host, T2 &&endpoint_port, T3 &&stream_protocol) {
 		return std::make_unique<SyncNetworkStreamClient>(
-		    std::forward<std::string>(endpoint_host),
-		    std::forward<std::uint16_t>(endpoint_port),
-		    std::forward<StreamProtocol>(stream_protocol));
+		    std::forward<T1>(endpoint_host),
+		    std::forward<T2>(endpoint_port),
+		    std::forward<T3>(stream_protocol));
 	}
 	SyncNetworkStreamClient(std::string endpoint_host,
 				std::uint16_t endpoint_port,
