@@ -38,17 +38,20 @@ class SyncNetworkStreamClientSSL final : public NetworkStream<char> {
 
       public:
 	constexpr static std::size_t default_io_buffer_size = 2048;
-	template <typename T1, typename T2, typename T3>
+	template <typename T1, typename T2, typename T3, typename T4>
 	static std::unique_ptr<NetworkStream<char>>
-	create(T1 &&endpoint_host, T2 &&endpoint_port, T3 &&stream_protocol) {
+	create(T1 &&endpoint_host, T2 &&endpoint_port, T3 &&stream_protocol,
+	       T4 &&client_cert_path) {
 		return std::make_unique<SyncNetworkStreamClientSSL>(
 		    std::forward<T1>(endpoint_host),
 		    std::forward<T2>(endpoint_port),
-		    std::forward<T3>(stream_protocol));
+		    std::forward<T3>(stream_protocol),
+		    std::forward<T4>(client_cert_path));
 	}
 	SyncNetworkStreamClientSSL(
 	    std::string endpoint_host, std::uint16_t endpoint_port,
-	    StreamProtocol stream_protocol) noexcept(false);
+	    StreamProtocol stream_protocol,
+	    std::string client_cert_path) noexcept(false);
 	int streamRead(size_t read_length) noexcept(false) override;
 	int streamWrite(const std::string &data) noexcept(false) override;
 	void flushBuffer() noexcept(false) override;
@@ -74,7 +77,8 @@ class SyncNetworkStreamClientSSL final : public NetworkStream<char> {
 // @@@ Right now, the Sync SSL-Stream is TCP only
 SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
     std::string endpoint_host, std::uint16_t endpoint_port,
-    StreamProtocol stream_protocol) noexcept(false)
+    StreamProtocol stream_protocol,
+    std::string client_cert_path) noexcept(false)
     : endpoint_host_{std::move(endpoint_host)}, endpoint_port_{endpoint_port},
       stream_protocol_{stream_protocol}, stream_mode_{StreamMode::Client},
       stream_type_{StreamType::SSLSyncStream} {
@@ -92,6 +96,7 @@ SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
 		throw std::runtime_error{std::strerror(errno)};
 	}
 	addr.sin_addr = *(reinterpret_cast<::in_addr *>(hoste->h_addr));
+	// inet_pton(AF_INET, endpoint_host_.c_str(), &addr.sin_addr.s_addr);
 	addr.sin_port = ::htons(endpoint_port_);
 	addr.sin_family = AF_INET;
 	::bzero(addr.sin_zero, 8);
@@ -104,16 +109,28 @@ SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
 	}
 	int ret = wolfSSL_Init();
 	if (ret != WOLFSSL_SUCCESS) {
-		fprintf(stderr, "Error: Failed to init wolfSSL lib\n");
+		fprintf(stderr, "Error: Failed to init wolfSSL lib: %d\n",
+			wolfSSL_get_error(ssl_.get(), ret));
 		close(endpoint_fd_);
 		throw std::runtime_error{"wolfSSL_Init()"};
 	}
 	ctx_ = std::unique_ptr<WOLFSSL_CTX, detail::WolfSSL_CTX_Deleter>(
 	    wolfSSL_CTX_new(wolfTLSv1_2_client_method()));
 	if (ctx_.get() == nullptr) {
-		fprintf(stderr, "Error: failed to create WOLFSSL_CTX object\n");
+		fprintf(stderr,
+			"Error: failed to create WOLFSSL_CTX object: %d\n",
+			wolfSSL_get_error(ssl_.get(), ret));
 		close(endpoint_fd_);
 		throw std::runtime_error{"wolfSSL_CTX_new()"};
+	}
+	ret = wolfSSL_CTX_load_verify_locations(
+	    ctx_.get(), client_cert_path.c_str(), nullptr);
+	if (ret != SSL_SUCCESS) {
+		fprintf(stderr,
+			"Error: failed to load the client cert-file: %d",
+			wolfSSL_get_error(ssl_.get(), ret));
+		close(endpoint_fd_);
+		throw std::runtime_error{"wolfSSL_CTX_load_verify_locations"};
 	}
 	ssl_ = std::unique_ptr<WOLFSSL, detail::WolfSSL_Deleter>(
 	    wolfSSL_new(ctx_.get()));
@@ -124,7 +141,8 @@ SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
 	}
 	ret = wolfSSL_set_fd(ssl_.get(), endpoint_fd_);
 	if (ret != SSL_SUCCESS) {
-		fprintf(stderr, "Error: failed to set FD to SSL context\n");
+		fprintf(stderr, "Error: failed to set FD to SSL context: %d\n",
+			wolfSSL_get_error(ssl_.get(), ret));
 		close(endpoint_fd_);
 		throw std::runtime_error{"wolfSSL_set_fd()"};
 	}

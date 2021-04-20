@@ -19,6 +19,7 @@ namespace {
 static std::string expected = "Hello, from SSL server";
 static std::string toWrite = "Hello, from C++ Tester";
 } // namespace
+
 TEST(SyncNetworkStreamClientSSL, TestOne) {
 	constexpr std::uint16_t server_port = 9876;
 	using namespace blueth;
@@ -28,14 +29,15 @@ TEST(SyncNetworkStreamClientSSL, TestOne) {
 	ssl_serv.detach();
 	std::unique_ptr<net::NetworkStream<char>> syncSSLStream =
 	    net::SyncNetworkStreamClientSSL::create("localhost", server_port,
-						    net::StreamProtocol::TCP);
+						    net::StreamProtocol::TCP, "client_cert.pem");
 	EXPECT_TRUE(
 	    syncSSLStream->constGetIOBuffer()->getDataSize() == 0 &&
 	    syncSSLStream->constGetIOBuffer()->getAvailableSpace() ==
 		net::SyncNetworkStreamClientSSL::default_io_buffer_size);
 	syncSSLStream->streamWrite(toWrite);
 	syncSSLStream->streamRead(1024);
-	EXPECT_EQ(syncSSLStream->constGetIOBuffer()->getDataSize(), expected.size());
+	EXPECT_EQ(syncSSLStream->constGetIOBuffer()->getDataSize(),
+		  expected.size());
 }
 
 void ssl_server_thread(std::uint16_t port, std::string ssl_cert,
@@ -82,14 +84,15 @@ void ssl_server_thread(std::uint16_t port, std::string ssl_cert,
 			std::perror("accept()");
 			exit(1);
 		}
-		if((ssl = wolfSSL_new(ctx)) == nullptr){
+		if ((ssl = wolfSSL_new(ctx)) == nullptr) {
 			fprintf(stderr, "failed to create wolfSSL object\n");
 			exit(1);
 		}
 		wolfSSL_set_fd(ssl, cli_fd);
 		int ret = wolfSSL_accept(ssl);
 		if (ret != SSL_SUCCESS) {
-			fprintf(stderr, "wolfSSL_accept = %d\n", wolfSSL_get_error(ssl, ret));
+			fprintf(stderr, "wolfSSL_accept = %d\n",
+				wolfSSL_get_error(ssl, ret));
 			exit(1);
 		}
 		if (wolfSSL_read(ssl, buffer, sizeof(buffer) - 1) < 0) {
