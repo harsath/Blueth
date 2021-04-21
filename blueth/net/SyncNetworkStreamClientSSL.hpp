@@ -55,7 +55,7 @@ class SyncNetworkStreamClientSSL final : public NetworkStream<char> {
 	int streamRead(size_t read_length) noexcept(false) override;
 	int streamWrite(const std::string &data) noexcept(false) override;
 	void flushBuffer() noexcept(false) override;
-	BLUETH_NODISCARD buffer_type getIOBuffer() noexcept(false) override;
+	BLUETH_NODISCARD buffer_type getIOBuffer() noexcept override;
 	BLUETH_NODISCARD const_buffer_reference_type
 	constGetIOBuffer() const noexcept override;
 	void setIOBuffer(buffer_type io_buffer) noexcept override;
@@ -197,7 +197,7 @@ void SyncNetworkStreamClientSSL::flushBuffer() noexcept(false) {
 }
 
 BLUETH_NODISCARD SyncNetworkStreamClientSSL::buffer_type
-SyncNetworkStreamClientSSL::getIOBuffer() noexcept(false) {
+SyncNetworkStreamClientSSL::getIOBuffer() noexcept {
 	std::unique_ptr<io::IOBuffer<char>> temp_buffer_holder =
 	    std::move(io_buffer_);
 	io_buffer_ = nullptr;

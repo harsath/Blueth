@@ -7,6 +7,7 @@
 #include <memory>
 
 namespace blueth::http {
+
 class HTTPRequestMessage {
       private:
 	static constexpr std::size_t initial_capacity_ = 2048;
@@ -24,12 +25,11 @@ class HTTPRequestMessage {
       public:
 	HTTPRequestMessage();
 	BLUETH_FORCE_INLINE static std::unique_ptr<HTTPRequestMessage> create();
-	template<typename T1, typename T2>
+	template <typename T1, typename T2>
 	BLUETH_FORCE_INLINE void addHeader(T1 &&header_name,
 					   T2 &&header_value) noexcept;
-	template<typename T>
-	BLUETH_FORCE_INLINE bool
-	removeHeader(T &&header_name) noexcept;
+	template <typename T>
+	BLUETH_FORCE_INLINE bool removeHeader(T &&header_name) noexcept;
 	BLUETH_FORCE_INLINE const std::unique_ptr<HTTPHeaders> &
 	constGetHTTPHeaders() const noexcept;
 	BLUETH_NODISCARD BLUETH_FORCE_INLINE std::unique_ptr<HTTPHeaders>
@@ -63,6 +63,15 @@ class HTTPRequestMessage {
 	BLUETH_FORCE_INLINE std::string getTempRequestMethod() const noexcept;
 };
 
+class HTTPResponseMessage {
+      private:
+	static constexpr std::size_t initial_capacity_ = 2048;
+	std::unique_ptr<HTTPHeaders> http_headers_{nullptr};
+	std::unique_ptr<io::IOBuffer<char>> raw_body_{nullptr};
+	HTTPResponseCodes response_code_;
+	HTTPVersion http_message_version_;
+};
+
 BLUETH_FORCE_INLINE inline std::unique_ptr<HTTPRequestMessage>
 HTTPRequestMessage::create() {
 	return std::make_unique<HTTPRequestMessage>();
@@ -75,17 +84,17 @@ inline HTTPRequestMessage::HTTPRequestMessage()
       target_resource_{""}, http_headers_{std::make_unique<HTTPHeaders>()},
       raw_body_{io::IOBuffer<char>::create(initial_capacity_)} {}
 
-template<typename T1, typename T2> BLUETH_FORCE_INLINE inline void
-HTTPRequestMessage::addHeader(T1 &&header_name,
-			      T2 &&header_value) noexcept {
-	http_headers_->addHeader({std::forward<T1>(header_name),
-				  std::forward<T2>(header_value)});
+template <typename T1, typename T2>
+BLUETH_FORCE_INLINE inline void
+HTTPRequestMessage::addHeader(T1 &&header_name, T2 &&header_value) noexcept {
+	http_headers_->addHeader(
+	    {std::forward<T1>(header_name), std::forward<T2>(header_value)});
 }
 
-template<typename T> BLUETH_FORCE_INLINE inline bool
+template <typename T>
+BLUETH_FORCE_INLINE inline bool
 HTTPRequestMessage::removeHeader(T &&header_name) noexcept {
-	return http_headers_->removeHeader(
-	    std::forward<T>(header_name));
+	return http_headers_->removeHeader(std::forward<T>(header_name));
 }
 
 BLUETH_FORCE_INLINE inline const std::unique_ptr<HTTPHeaders> &
@@ -141,8 +150,7 @@ inline void HTTPRequestMessage::setRawBody(
 template <typename T>
 BLUETH_FORCE_INLINE inline std::optional<std::string>
 HTTPRequestMessage::getHeaderValue(T &&header_name) noexcept {
-	return http_headers_->getHeaderValue(
-	    std::forward<T>(header_name));
+	return http_headers_->getHeaderValue(std::forward<T>(header_name));
 }
 
 inline std::string HTTPRequestMessage::buildRawMessage() const noexcept {
