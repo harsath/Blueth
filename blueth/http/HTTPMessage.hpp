@@ -1,7 +1,7 @@
 #pragma once
-#include "common.hpp"
 #include "HTTPConstants.hpp"
 #include "HTTPHeaders.hpp"
+#include "common.hpp"
 #include "io/IOBuffer.hpp"
 #include <algorithm>
 #include <memory>
@@ -23,32 +23,31 @@ class HTTPRequestMessage {
 
       public:
 	HTTPRequestMessage();
-	BLUETH_FORCE_INLINE static std::unique_ptr<HTTPRequestMessage>
-	create();
-	BLUETH_FORCE_INLINE void
-	addHeader(std::string &&header_name,
-		   std::string &&header_value) noexcept;
+	BLUETH_FORCE_INLINE static std::unique_ptr<HTTPRequestMessage> create();
+	template<typename T1, typename T2>
+	BLUETH_FORCE_INLINE void addHeader(T1 &&header_name,
+					   T2 &&header_value) noexcept;
+	template<typename T>
 	BLUETH_FORCE_INLINE bool
-	removeHeader(std::string &&header_name) noexcept;
+	removeHeader(T &&header_name) noexcept;
 	BLUETH_FORCE_INLINE const std::unique_ptr<HTTPHeaders> &
 	constGetHTTPHeaders() const noexcept;
 	BLUETH_NODISCARD BLUETH_FORCE_INLINE std::unique_ptr<HTTPHeaders>
 	getHTTPHeaders() noexcept;
 	BLUETH_FORCE_INLINE void flushBody() noexcept;
-	BLUETH_FORCE_INLINE void
-	setRequestType(HTTPRequestType type) noexcept;
+	BLUETH_FORCE_INLINE void setRequestType(HTTPRequestType type) noexcept;
 	BLUETH_FORCE_INLINE HTTPRequestType getRequestType() const noexcept;
-	BLUETH_FORCE_INLINE void
-	setHTTPVersion(HTTPVersion version) noexcept;
+	BLUETH_FORCE_INLINE void setHTTPVersion(HTTPVersion version) noexcept;
 	BLUETH_FORCE_INLINE HTTPVersion getHTTPVersion() const noexcept;
+	template <typename T>
 	BLUETH_FORCE_INLINE void
-	setHTTPTargetResource(std::string &&target_resource) noexcept;
+	setHTTPTargetResource(T &&target_resource) noexcept;
 	BLUETH_FORCE_INLINE const std::string &
 	getTargetResource() const noexcept;
-	void
-	setRawBody(std::unique_ptr<io::IOBuffer<char>> io_buffer) noexcept;
+	void setRawBody(std::unique_ptr<io::IOBuffer<char>> io_buffer) noexcept;
+	template <typename T>
 	BLUETH_FORCE_INLINE std::optional<std::string>
-	getHeaderValue(std::string &&header_name) noexcept;
+	getHeaderValue(T &&header_name) noexcept;
 	std::string buildRawMessage() const noexcept;
 
 	// These methods are only implemented to work with the state-machine
@@ -59,12 +58,9 @@ class HTTPRequestMessage {
 	BLUETH_FORCE_INLINE void
 	pushBackRawBody(std::string &&raw_body) noexcept;
 	BLUETH_FORCE_INLINE void pushBackRawBody(char char_val) noexcept;
-	BLUETH_FORCE_INLINE void
-	pushBackTargetResource(char char_val) noexcept;
-	BLUETH_FORCE_INLINE void
-	pushBackRequestMethod(char char_val) noexcept;
-	BLUETH_FORCE_INLINE std::string
-	getTempRequestMethod() const noexcept;
+	BLUETH_FORCE_INLINE void pushBackTargetResource(char char_val) noexcept;
+	BLUETH_FORCE_INLINE void pushBackRequestMethod(char char_val) noexcept;
+	BLUETH_FORCE_INLINE std::string getTempRequestMethod() const noexcept;
 };
 
 BLUETH_FORCE_INLINE inline std::unique_ptr<HTTPRequestMessage>
@@ -79,17 +75,17 @@ inline HTTPRequestMessage::HTTPRequestMessage()
       target_resource_{""}, http_headers_{std::make_unique<HTTPHeaders>()},
       raw_body_{io::IOBuffer<char>::create(initial_capacity_)} {}
 
-BLUETH_FORCE_INLINE inline void
-HTTPRequestMessage::addHeader(std::string &&header_name,
-				 std::string &&header_value) noexcept {
-	http_headers_->addHeader({std::forward<std::string>(header_name),
-				   std::forward<std::string>(header_value)});
+template<typename T1, typename T2> BLUETH_FORCE_INLINE inline void
+HTTPRequestMessage::addHeader(T1 &&header_name,
+			      T2 &&header_value) noexcept {
+	http_headers_->addHeader({std::forward<T1>(header_name),
+				  std::forward<T2>(header_value)});
 }
 
-BLUETH_FORCE_INLINE inline bool
-HTTPRequestMessage::removeHeader(std::string &&header_name) noexcept {
+template<typename T> BLUETH_FORCE_INLINE inline bool
+HTTPRequestMessage::removeHeader(T &&header_name) noexcept {
 	return http_headers_->removeHeader(
-	    std::forward<std::string>(header_name));
+	    std::forward<T>(header_name));
 }
 
 BLUETH_FORCE_INLINE inline const std::unique_ptr<HTTPHeaders> &
@@ -126,9 +122,10 @@ HTTPRequestMessage::getHTTPVersion() const noexcept {
 	return http_message_version_;
 }
 
-BLUETH_FORCE_INLINE inline void HTTPRequestMessage::setHTTPTargetResource(
-    std::string &&target_resource) noexcept {
-	target_resource_ += std::forward<std::string>(target_resource);
+template <typename T>
+BLUETH_FORCE_INLINE inline void
+HTTPRequestMessage::setHTTPTargetResource(T &&target_resource) noexcept {
+	target_resource_ += std::forward<T>(target_resource);
 }
 
 BLUETH_FORCE_INLINE inline const std::string &
@@ -141,10 +138,11 @@ inline void HTTPRequestMessage::setRawBody(
 	raw_body_->appendRawBytes(std::move(*io_buffer.get()));
 }
 
+template <typename T>
 BLUETH_FORCE_INLINE inline std::optional<std::string>
-HTTPRequestMessage::getHeaderValue(std::string &&header_name) noexcept {
+HTTPRequestMessage::getHeaderValue(T &&header_name) noexcept {
 	return http_headers_->getHeaderValue(
-	    std::forward<std::string>(header_name));
+	    std::forward<T>(header_name));
 }
 
 inline std::string HTTPRequestMessage::buildRawMessage() const noexcept {
@@ -162,8 +160,12 @@ inline std::string HTTPRequestMessage::buildRawMessage() const noexcept {
 	case HTTPRequestType::Put:
 		returner += "PUT ";
 		break;
+	case HTTPRequestType::Connect:
+		returner += "CONNECT ";
+		break;
 	case HTTPRequestType::Unsupported:
-		return returner;
+		returner += "UNSUPPORTED ";
+		break;
 	}
 	returner += target_resource_;
 	returner += " ";
@@ -187,7 +189,7 @@ HTTPRequestMessage::pushBackHeaderName(char char_val) noexcept {
 BLUETH_FORCE_INLINE inline void
 HTTPRequestMessage::addTempHeadersHolderToMessage() noexcept {
 	http_headers_->addHeader({std::move(temp_header_name_holder_),
-				   std::move(temp_header_value_holder_)});
+				  std::move(temp_header_value_holder_)});
 }
 
 BLUETH_FORCE_INLINE inline void

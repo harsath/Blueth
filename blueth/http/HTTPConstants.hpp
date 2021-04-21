@@ -14,7 +14,7 @@ enum class HTTPResponseCodes {
 	Unauthorized = 401
 };
 
-enum class HTTPRequestType { Get, Post, Head, Put, Unsupported };
+enum class HTTPRequestType { Get, Post, Head, Put, Unsupported, Connect };
 
 enum class HTTPServerType { PlaintextServer, SSLServer };
 
