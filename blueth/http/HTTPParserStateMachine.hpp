@@ -12,6 +12,7 @@
 #define print_me std::cout << "Here" << std::endl;
 namespace blueth::http {
 
+// Parser for HTTP Requet Message
 inline std::pair<ParserState, std::unique_ptr<HTTPRequestMessage>>
 ParseHTTP1_1RequestMessage(
     const std::unique_ptr<io::IOBuffer<char>> &request_message,

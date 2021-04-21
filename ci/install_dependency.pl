@@ -16,6 +16,7 @@ system $apt_cmd;
 `cpan install IO::Socket::INET`;
 `cpan install Term::ANSIColor`;
 `cpan install IO::Socket::SSL`;
+`cpan install HTTP::Proxy`;
 
 print "\n\n#### CMake Version: ####\n\n";
 system "cmake --version";

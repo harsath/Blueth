@@ -105,7 +105,7 @@ template <typename BufferType> class NetworkStream {
 	 * @return Unique pointer of IOBuffer<BufferType> is returned if the
 	 * object stores a valid buffer.
 	 */
-	virtual buffer_type getIOBuffer() noexcept(false) = 0;
+	virtual buffer_type getIOBuffer() noexcept = 0;
 	/**
 	 * Get a Const-Ref Unique pointer to IOBuffer. This call does not modify
 	 * or transfer the ownership of the underlying IOBuffer object
