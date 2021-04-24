@@ -16,16 +16,16 @@ TEST(HttpStateMachine, HttpStateMachineGET){
 		std::unique_ptr<io::IOBuffer<char>> io_buffer = io::IOBuffer<char>::create(2048);
 		io_buffer->appendRawBytes(sample_request.c_str(), sample_request.size());
 		http::ParserState current_state = http::ParserState::RequestLineBegin;
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request =
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request =
 			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(http_message));
-		ASSERT_TRUE(parsed_request.first == http::ParserState::ParsingDone);
-		ASSERT_TRUE(parsed_request.second->constGetHTTPHeaders()->headerCount() == 3);
-		ASSERT_TRUE(parsed_request.second->getHTTPVersion() == http::HTTPVersion::HTTP1_1);
-		ASSERT_TRUE(parsed_request.second->getRequestType() == http::HTTPRequestType::Get);
-		ASSERT_TRUE(parsed_request.second->getTargetResource() == "/index.php");
-		ASSERT_TRUE(parsed_request.second->getHeaderValue("Accept") == "*/*");
-		ASSERT_TRUE(parsed_request.second->getHeaderValue("User-Agent").value() == "FB/CXX-Bot/12.32");
-		ASSERT_TRUE(parsed_request.second->getHeaderValue("Host") == "Proxygen.fb.com");
+		ASSERT_TRUE(current_state == http::ParserState::ParsingDone);
+		ASSERT_TRUE(parsed_request->constGetHTTPHeaders()->headerCount() == 3);
+		ASSERT_TRUE(parsed_request->getHTTPVersion() == http::HTTPVersion::HTTP1_1);
+		ASSERT_TRUE(parsed_request->getRequestType() == http::HTTPRequestType::Get);
+		ASSERT_TRUE(parsed_request->getTargetResource() == "/index.php");
+		ASSERT_TRUE(parsed_request->getHeaderValue("Accept") == "*/*");
+		ASSERT_TRUE(parsed_request->getHeaderValue("User-Agent").value() == "FB/CXX-Bot/12.32");
+		ASSERT_TRUE(parsed_request->getHeaderValue("Host") == "Proxygen.fb.com");
 	}
 	{ // Invalid HTTP GET Message
 		std::unique_ptr<http::HTTPRequestMessage> http_message =
@@ -37,9 +37,9 @@ TEST(HttpStateMachine, HttpStateMachineGET){
 		std::unique_ptr<io::IOBuffer<char>> io_buffer = io::IOBuffer<char>::create(2048);
 		io_buffer->appendRawBytes(sample_request.c_str(), sample_request.size());
 		http::ParserState current_state = http::ParserState::RequestLineBegin;
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request =
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request =
 			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(http_message));
-		ASSERT_TRUE(parsed_request.first == http::ParserState::ProtocolError);
+		ASSERT_TRUE(current_state == http::ParserState::ProtocolError);
 	}
 	{ // Invalid HTTP GET Message
 		std::unique_ptr<http::HTTPRequestMessage> http_message =
@@ -51,9 +51,9 @@ TEST(HttpStateMachine, HttpStateMachineGET){
 		std::unique_ptr<io::IOBuffer<char>> io_buffer = io::IOBuffer<char>::create(2048);
 		io_buffer->appendRawBytes(sample_request.c_str(), sample_request.size());
 		http::ParserState current_state = http::ParserState::RequestLineBegin;
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request =
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request =
 			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(http_message));
-		ASSERT_TRUE(parsed_request.first == http::ParserState::ProtocolError);
+		ASSERT_TRUE(current_state == http::ParserState::ProtocolError);
 	}
 	{ // Invalid HTTP GET Message
 		std::unique_ptr<http::HTTPRequestMessage> http_message =
@@ -65,9 +65,9 @@ TEST(HttpStateMachine, HttpStateMachineGET){
 		std::unique_ptr<io::IOBuffer<char>> io_buffer = io::IOBuffer<char>::create(2048);
 		io_buffer->appendRawBytes(sample_request.c_str(), sample_request.size());
 		http::ParserState current_state = http::ParserState::RequestLineBegin;
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request =
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request =
 			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(http_message));
-		ASSERT_TRUE(parsed_request.first == http::ParserState::ProtocolError);
+		ASSERT_TRUE(current_state == http::ParserState::ProtocolError);
 	}
 	{ // Valid ASYNC simulation
 		std::unique_ptr<http::HTTPRequestMessage> http_message =
@@ -79,21 +79,21 @@ TEST(HttpStateMachine, HttpStateMachineGET){
 		std::unique_ptr<io::IOBuffer<char>> io_buffer = io::IOBuffer<char>::create(2048);
 		io_buffer->appendRawBytes(sample_request.c_str(), sample_request.size());
 		http::ParserState current_state = http::ParserState::RequestLineBegin;
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request =
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request =
 			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(http_message));
-		ASSERT_TRUE(parsed_request.first == http::ParserState::HeaderName);
+		ASSERT_TRUE(current_state == http::ParserState::HeaderName);
 		io_buffer->appendRawBytes(sample_request_remaining.c_str(), sample_request_remaining.size());
 		io_buffer->setStartOffset(sample_request.size());
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request_remaining =
-			http::ParseHTTP1_1RequestMessage(io_buffer, parsed_request.first, std::move(parsed_request.second));
-		ASSERT_TRUE(parsed_request_remaining.first == http::ParserState::ParsingDone);
-		ASSERT_TRUE(parsed_request_remaining.second->constGetHTTPHeaders()->headerCount() == 3);
-		ASSERT_TRUE(parsed_request_remaining.second->getHTTPVersion() == http::HTTPVersion::HTTP1_1);
-		ASSERT_TRUE(parsed_request_remaining.second->getRequestType() == http::HTTPRequestType::Get);
-		ASSERT_TRUE(parsed_request_remaining.second->getTargetResource() == "/index.php");
-		ASSERT_TRUE(parsed_request_remaining.second->getHeaderValue("Accept") == "*/*");
-		ASSERT_TRUE(parsed_request_remaining.second->getHeaderValue("User-Agent") == "FB/CXX-Bot/12.32");
-		ASSERT_TRUE(parsed_request_remaining.second->getHeaderValue("Host") == "Proxygen.fb.com");
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request_remaining =
+			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(parsed_request));
+		ASSERT_TRUE(current_state == http::ParserState::ParsingDone);
+		ASSERT_TRUE(parsed_request_remaining->constGetHTTPHeaders()->headerCount() == 3);
+		ASSERT_TRUE(parsed_request_remaining->getHTTPVersion() == http::HTTPVersion::HTTP1_1);
+		ASSERT_TRUE(parsed_request_remaining->getRequestType() == http::HTTPRequestType::Get);
+		ASSERT_TRUE(parsed_request_remaining->getTargetResource() == "/index.php");
+		ASSERT_TRUE(parsed_request_remaining->getHeaderValue("Accept") == "*/*");
+		ASSERT_TRUE(parsed_request_remaining->getHeaderValue("User-Agent") == "FB/CXX-Bot/12.32");
+		ASSERT_TRUE(parsed_request_remaining->getHeaderValue("Host") == "Proxygen.fb.com");
 	}
 	{ // Valid ASYNC simulation
 		std::unique_ptr<http::HTTPRequestMessage> http_message =
@@ -107,24 +107,24 @@ TEST(HttpStateMachine, HttpStateMachineGET){
 		std::unique_ptr<io::IOBuffer<char>> io_buffer = io::IOBuffer<char>::create(2048);
 		io_buffer->appendRawBytes(sample_request.c_str(), sample_request.size());
 		http::ParserState current_state = http::ParserState::RequestLineBegin;
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request =
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request =
 			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(http_message));
-		ASSERT_TRUE(parsed_request.first == http::ParserState::HeaderName);
+		ASSERT_TRUE(current_state == http::ParserState::HeaderName);
 		io_buffer->appendRawBytes(sample_request_remaining.c_str(), sample_request_remaining.size());
 		io_buffer->setStartOffset(sample_request.size());
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request_remaining =
-			http::ParseHTTP1_1RequestMessage(io_buffer, parsed_request.first, std::move(parsed_request.second));
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request_remaining =
+			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(parsed_request));
 		io_buffer->appendRawBytes(sample_request_remaining_two.c_str(), sample_request_remaining_two.size());
 		io_buffer->modifyStartOffset(sample_request_remaining.size());
-		std::pair<http::ParserState, std::unique_ptr<http::HTTPRequestMessage>> parsed_request_remaining_two =
-			http::ParseHTTP1_1RequestMessage(io_buffer, parsed_request_remaining.first, std::move(parsed_request_remaining.second));
-		ASSERT_TRUE(parsed_request_remaining_two.first == http::ParserState::ParsingDone);
-		ASSERT_TRUE(parsed_request_remaining_two.second->constGetHTTPHeaders()->headerCount() == 3);
-		ASSERT_TRUE(parsed_request_remaining_two.second->getHTTPVersion() == http::HTTPVersion::HTTP1_1);
-		ASSERT_TRUE(parsed_request_remaining_two.second->getRequestType() == http::HTTPRequestType::Get);
-		ASSERT_TRUE(parsed_request_remaining_two.second->getTargetResource() == "/index.php");
-		ASSERT_TRUE(parsed_request_remaining_two.second->getHeaderValue("Accept") == "*/*");
-		ASSERT_TRUE(parsed_request_remaining_two.second->getHeaderValue("User-Agent") == "FB/CXX-Bot/12.32");
-		ASSERT_TRUE(parsed_request_remaining_two.second->getHeaderValue("Host") == "Proxygen.fb.com");
+		std::unique_ptr<http::HTTPRequestMessage> parsed_request_remaining_two =
+			http::ParseHTTP1_1RequestMessage(io_buffer, current_state, std::move(parsed_request_remaining));
+		ASSERT_TRUE(current_state == http::ParserState::ParsingDone);
+		ASSERT_TRUE(parsed_request_remaining_two->constGetHTTPHeaders()->headerCount() == 3);
+		ASSERT_TRUE(parsed_request_remaining_two->getHTTPVersion() == http::HTTPVersion::HTTP1_1);
+		ASSERT_TRUE(parsed_request_remaining_two->getRequestType() == http::HTTPRequestType::Get);
+		ASSERT_TRUE(parsed_request_remaining_two->getTargetResource() == "/index.php");
+		ASSERT_TRUE(parsed_request_remaining_two->getHeaderValue("Accept") == "*/*");
+		ASSERT_TRUE(parsed_request_remaining_two->getHeaderValue("User-Agent") == "FB/CXX-Bot/12.32");
+		ASSERT_TRUE(parsed_request_remaining_two->getHeaderValue("Host") == "Proxygen.fb.com");
 	}
 }

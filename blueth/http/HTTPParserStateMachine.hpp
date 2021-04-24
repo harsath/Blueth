@@ -13,7 +13,7 @@
 namespace blueth::http {
 
 // Parser for HTTP Requet Message
-inline std::pair<ParserState, std::unique_ptr<HTTPRequestMessage>>
+inline std::unique_ptr<HTTPRequestMessage>
 ParseHTTP1_1RequestMessage(
     const std::unique_ptr<io::IOBuffer<char>> &request_message,
     ParserState &current_state,
@@ -222,7 +222,7 @@ ParseHTTP1_1RequestMessage(
 		}
 	}
 FINISH:
-	return {current_state, std::move(http_message)};
+	return std::move(http_message);
 }
 
 } // namespace blueth::http
