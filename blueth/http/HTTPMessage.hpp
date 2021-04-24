@@ -77,7 +77,7 @@ class HTTPResponseMessage {
 	std::string temp_header_value_holder_;
 	std::string temp_header_name_holder_;
 	struct {
-		char http_code_holder[3];
+		char http_code_holder[4];
 		size_t current_index{};
 	} temp_http_status_code_holder_;
 
@@ -281,7 +281,9 @@ inline HTTPResponseMessage::HTTPResponseMessage()
     : response_code_{HTTPResponseCodes::BadRequest},
       http_message_version_{HTTPVersion::HTTP1_1},
       http_headers_{std::make_unique<HTTPHeaders>()},
-      raw_body_{io::IOBuffer<char>::create(initial_capacity_)} {}
+      raw_body_{io::IOBuffer<char>::create(initial_capacity_)} {
+	temp_http_status_code_holder_.http_code_holder[3] = '\0';
+}
 
 template <typename T1, typename T2>
 BLUETH_FORCE_INLINE inline void
@@ -345,7 +347,7 @@ inline std::string HTTPResponseMessage::buildRawMessage() const noexcept {
 	std::string returner;
 	// Only supports HTTP/1.x message as of now
 	if (http_message_version_ == HTTPVersion::HTTP1_1) {
-		returner += "HTTP/1.1";
+		returner += "HTTP/1.1 ";
 	} else {
 		// TODO(me): HTTP message template
 		return "";
