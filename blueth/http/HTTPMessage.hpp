@@ -126,8 +126,7 @@ HTTPRequestMessage::create() {
 inline HTTPRequestMessage::HTTPRequestMessage()
     : request_type_{HTTPRequestType::Unsupported},
       http_message_version_{HTTPVersion::HTTP1_1},
-      temp_header_value_holder_{""}, temp_header_name_holder_{""},
-      target_resource_{""}, http_headers_{std::make_unique<HTTPHeaders>()},
+      http_headers_{std::make_unique<HTTPHeaders>()},
       raw_body_{io::IOBuffer<char>::create(initial_capacity_)} {}
 
 template <typename T1, typename T2>
@@ -277,6 +276,12 @@ BLUETH_FORCE_INLINE inline std::unique_ptr<HTTPResponseMessage>
 HTTPResponseMessage::create() {
 	return std::make_unique<HTTPResponseMessage>();
 }
+
+inline HTTPResponseMessage::HTTPResponseMessage()
+    : response_code_{HTTPResponseCodes::BadRequest},
+      http_message_version_{HTTPVersion::HTTP1_1},
+      http_headers_{std::make_unique<HTTPHeaders>()},
+      raw_body_{io::IOBuffer<char>::create(initial_capacity_)} {}
 
 template <typename T1, typename T2>
 BLUETH_FORCE_INLINE inline void
@@ -678,17 +683,17 @@ inline std::string HTTPResponseMessage::buildRawMessage() const noexcept {
 	return returner;
 }
 
-BLUETH_FORCE_INLINE void
+BLUETH_FORCE_INLINE inline void
 HTTPResponseMessage::pushBackHeaderValue(char char_val) noexcept {
 	temp_header_value_holder_.push_back(char_val);
 }
 
-BLUETH_FORCE_INLINE void
+BLUETH_FORCE_INLINE inline void
 HTTPResponseMessage::pushBackHeaderName(char char_val) noexcept {
 	temp_header_name_holder_.push_back(char_val);
 }
 
-BLUETH_FORCE_INLINE void
+BLUETH_FORCE_INLINE inline void
 HTTPResponseMessage::addTempHeadersHolderToMessage() noexcept {
 	http_headers_->addHeader({std::move(temp_header_name_holder_),
 				  std::move(temp_header_value_holder_)});
@@ -696,12 +701,12 @@ HTTPResponseMessage::addTempHeadersHolderToMessage() noexcept {
 	temp_header_value_holder_.clear();
 }
 
-BLUETH_FORCE_INLINE void
+BLUETH_FORCE_INLINE inline void
 HTTPResponseMessage::pushBackRawBody(std::string &&raw_body) noexcept {
 	raw_body_->appendRawBytes(raw_body.c_str(), raw_body.size());
 }
 
-BLUETH_FORCE_INLINE void
+BLUETH_FORCE_INLINE inline void
 HTTPResponseMessage::pushBackResponseCode(char char_value) noexcept {
 	if (temp_http_status_code_holder_.current_index <= 2)
 		temp_http_status_code_holder_
@@ -709,7 +714,7 @@ HTTPResponseMessage::pushBackResponseCode(char char_value) noexcept {
 					  .current_index++] = char_value;
 }
 
-BLUETH_FORCE_INLINE const char *
+BLUETH_FORCE_INLINE inline const char *
 HTTPResponseMessage::getTempStatusCode() const noexcept {
 	return temp_http_status_code_holder_.http_code_holder;
 }
