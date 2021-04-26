@@ -188,7 +188,7 @@ ParseHTTP1_1RequestMessage(
 			break;
 		// clang-format off
 		case ParserState::HeaderEndLF:
-			if(*start_buffer == static_cast<char>(LexConsts::LF)) {
+			if (*start_buffer == static_cast<char>(LexConsts::LF)) {
 				if (str3cmp(http_message->getTempRequestMethod().c_str(), "GET")) {
 					current_state = ParserState::ParsingDone;
 					http_message->setRequestType(HTTPRequestType::Get);
