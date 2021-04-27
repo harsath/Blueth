@@ -8,11 +8,10 @@
 #include <memory>
 #include <utility>
 
-#include <iostream>
-#define print_me std::cout << "Here" << std::endl;
 namespace blueth::http {
 
-inline std::pair<ParserState, std::unique_ptr<HTTPRequestMessage>>
+// Parser for HTTP Requet Message
+inline std::unique_ptr<HTTPRequestMessage>
 ParseHTTP1_1RequestMessage(
     const std::unique_ptr<io::IOBuffer<char>> &request_message,
     ParserState &current_state,
@@ -187,7 +186,7 @@ ParseHTTP1_1RequestMessage(
 			break;
 		// clang-format off
 		case ParserState::HeaderEndLF:
-			if(*start_buffer == static_cast<char>(LexConsts::LF)) {
+			if (*start_buffer == static_cast<char>(LexConsts::LF)) {
 				if (str3cmp(http_message->getTempRequestMethod().c_str(), "GET")) {
 					current_state = ParserState::ParsingDone;
 					http_message->setRequestType(HTTPRequestType::Get);
@@ -221,7 +220,7 @@ ParseHTTP1_1RequestMessage(
 		}
 	}
 FINISH:
-	return {current_state, std::move(http_message)};
+	return std::move(http_message);
 }
 
 } // namespace blueth::http

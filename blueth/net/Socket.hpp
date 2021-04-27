@@ -172,9 +172,9 @@ inline Socket::~Socket() { ::close(_file_des); }
 
 static void makeSocketNonBlocking(int socket) noexcept(false) {
 	int flags = ::fcntl(socket, F_GETFL, 0);
-	if(flags == -1){ throw std::runtime_error("fnctl() F_GETFL"); }
+	if (flags == -1) { throw std::runtime_error("fnctl() F_GETFL"); }
 	int ret = ::fcntl(socket, F_SETFL, flags | O_NONBLOCK);
-	if(ret == -1){ throw std::runtime_error("fcntl() O_NONBLOCK"); }
+	if (ret == -1) { throw std::runtime_error("fcntl() O_NONBLOCK"); }
 }
 
 } // namespace blueth::net

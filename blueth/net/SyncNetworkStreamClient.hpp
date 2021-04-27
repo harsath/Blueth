@@ -35,13 +35,13 @@ class SyncNetworkStreamClient final : public NetworkStream<char> {
 
       public:
 	constexpr static std::size_t default_io_buffer_size = 2048;
+	template <typename T1, typename T2, typename T3>
 	static std::unique_ptr<NetworkStream<char>>
-	create(std::string &&endpoint_host, std::uint16_t &&endpoint_port,
-	       StreamProtocol &&stream_protocol) {
+	create(T1 &&endpoint_host, T2 &&endpoint_port, T3 &&stream_protocol) {
 		return std::make_unique<SyncNetworkStreamClient>(
-		    std::forward<std::string>(endpoint_host),
-		    std::forward<std::uint16_t>(endpoint_port),
-		    std::forward<StreamProtocol>(stream_protocol));
+		    std::forward<T1>(endpoint_host),
+		    std::forward<T2>(endpoint_port),
+		    std::forward<T3>(stream_protocol));
 	}
 	SyncNetworkStreamClient(std::string endpoint_host,
 				std::uint16_t endpoint_port,
@@ -49,9 +49,9 @@ class SyncNetworkStreamClient final : public NetworkStream<char> {
 	int streamRead(size_t read_length) noexcept(false) override;
 	int streamWrite(const std::string &data) noexcept(false) override;
 	void flushBuffer() noexcept(false) override;
-	BLUETH_NODISCARD buffer_type getIOBuffer() noexcept(false) override;
-	BLUETH_NODISCARD const_buffer_reference_type constGetIOBuffer() const
-	    noexcept(false) override;
+	BLUETH_NODISCARD buffer_type getIOBuffer() noexcept override;
+	BLUETH_NODISCARD const_buffer_reference_type
+	constGetIOBuffer() const noexcept override;
 	void setIOBuffer(buffer_type io_buffer) noexcept override;
 	StreamType getStreamType() const noexcept override;
 	StreamMode getStreamMode() const noexcept override;
@@ -113,32 +113,30 @@ int SyncNetworkStreamClient::streamRead(size_t read_length) noexcept(false) {
 	}
 	if (read_length > io_buffer_->getAvailableSpace())
 		io_buffer_->reserve(io_buffer_->getCapacity() + read_length);
-	char temp_buffer[io_buffer_->getAvailableSpace()];
-	int read_ret = ::recv(endpoint_fd_, temp_buffer,
-			      io_buffer_->getAvailableSpace(), 0);
+	char temp_buffer[read_length];
+	int read_ret = ::recv(endpoint_fd_, temp_buffer, read_length, 0);
 	if (read_ret < 0) return read_ret;
 	io_buffer_->appendRawBytes(temp_buffer, read_ret);
 	if (read_callback_) read_callback_(io_buffer_);
 	return read_ret;
 }
 
+/**
+ * Since it's a blocking-IO byte transfer on the wire, we don't need to touch
+ * the underlying IOBuffer so we only need to check if we transfered the bytes
+ * directly from 'data' onto the wire. Using a IOBuffer is a level of
+ * indirection, which we don't want since this interface is Sync and not Async
+ * network-IO.
+ */
+
 int SyncNetworkStreamClient::streamWrite(const std::string &data) noexcept(
     false) {
-	if (!io_buffer_ || !is_connected_) {
-		throw std::runtime_error{"invalid IOBuffer or the connection "
-					 "to the endpoint is closed"};
+	if (!is_connected_) {
+		throw std::runtime_error{
+		    "The TCP connection to the endpoint is not connected"};
 	}
-	if (io_buffer_->getAvailableSpace() <= data.size())
-		io_buffer_->reserve(io_buffer_->getCapacity() + data.size());
-	io_buffer_->appendRawBytes(data.c_str(), data.size());
-	/// We have nothing to write onto the endpoint, so we return 0
-	/// indicating we didn't write anything on the wire
-	if (io_buffer_->getDataSize() == 0) { return 0; }
-	int write_ret =
-	    ::send(endpoint_fd_, io_buffer_->getStartOffsetPointer(),
-		   io_buffer_->getDataSize(), 0);
-	if (write_ret < 0) return write_ret;
-	io_buffer_->modifyStartOffset(write_ret);
+	if (data.empty()) return 0;
+	int write_ret = ::send(endpoint_fd_, data.c_str(), data.size(), 0);
 	if (write_callback_) write_callback_(io_buffer_);
 	return write_ret;
 }
@@ -148,8 +146,8 @@ void SyncNetworkStreamClient::flushBuffer() noexcept(false) {
 	io_buffer_->clear();
 }
 
-BLUETH_NODISCARD BLUETH_NODISCARD SyncNetworkStreamClient::buffer_type
-SyncNetworkStreamClient::getIOBuffer() noexcept(false) {
+BLUETH_NODISCARD SyncNetworkStreamClient::buffer_type
+SyncNetworkStreamClient::getIOBuffer() noexcept {
 	std::unique_ptr<io::IOBuffer<char>> temp_buffer_holder =
 	    std::move(io_buffer_);
 	io_buffer_ = nullptr;
@@ -157,7 +155,7 @@ SyncNetworkStreamClient::getIOBuffer() noexcept(false) {
 }
 
 BLUETH_NODISCARD SyncNetworkStreamClient::const_buffer_reference_type
-SyncNetworkStreamClient::constGetIOBuffer() const noexcept(false) {
+SyncNetworkStreamClient::constGetIOBuffer() const noexcept {
 	return io_buffer_;
 }
 

@@ -1,6 +1,7 @@
 #include "io/IOBuffer.hpp"
 #include "net/NetworkStream.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <gtest/gtest.h>
@@ -8,13 +9,14 @@
 #include <memory>
 #include <net/SyncNetworkStreamClient.hpp>
 
-TEST(BluethNetTest, SyncNetworkStreamClientTest) {
+TEST(SyncNetworkStreamClientTest, TestOne) {
+	constexpr std::uint16_t perl_port = 1234;
 	std::system("perl ../tests/scripts/sync_client_netstream_test.pl &");
 	using namespace blueth;
 	std::string perlSciptExpected = "Hello, it's from Perl";
 	using ConstIOBuffer = const std::unique_ptr<io::IOBuffer<char>> &;
 	std::unique_ptr<net::NetworkStream<char>> syncNetStream =
-	    net::SyncNetworkStreamClient::create("localhost", 1234,
+	    net::SyncNetworkStreamClient::create("localhost", perl_port,
 						 net::StreamProtocol::TCP);
 	std::string writeData = "Hey, this is client";
 	EXPECT_TRUE(syncNetStream->constGetIOBuffer()->getDataSize() == 0 &&

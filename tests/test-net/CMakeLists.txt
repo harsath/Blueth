@@ -21,3 +21,15 @@ target_link_libraries(
 	gtest_main
 	pthread
 	)
+
+add_executable(
+	ssl_sync_net_stream_client
+	./test-SyncNetworkStreamClientSSL.cpp
+	)
+target_link_libraries(
+	ssl_sync_net_stream_client
+	libblueth
+	gtest
+	gtest_main
+	pthread
+	)

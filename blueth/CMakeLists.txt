@@ -20,6 +20,7 @@ set(
 	UTILS
 	utils/simd.hpp
 	utils/UnixTime.hpp
+	utils/Base64.hpp
 	)
 set(
 	HTTP
