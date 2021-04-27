@@ -5,10 +5,11 @@
 #include "http/HTTPConstants.hpp"
 #include "io/IOBuffer.hpp"
 #include <cctype>
+#include <cstdlib>
 #include <memory>
 
 #include <iostream>
-#define print_me std::cout << "Here" << std::endl;
+#define print_me(x) std::cout << x << std::endl;
 namespace blueth::http {
 
 inline std::unique_ptr<HTTPResponseMessage> ParseHTTP1_1ResponseMessage(
@@ -17,10 +18,12 @@ inline std::unique_ptr<HTTPResponseMessage> ParseHTTP1_1ResponseMessage(
     std::unique_ptr<HTTPResponseMessage> http_message) {
 	const char *start_buffer = response_message->getStartOffsetPointer();
 	const char *end_buffer = response_message->getEndOffsetPointer();
+
 	// clang-format off
 		auto increment_buffer_offset = [&start_buffer]
 			(size_t inc_size = 1) -> void { start_buffer += inc_size; };
 	// clang-format on
+
 	while (start_buffer != end_buffer) {
 		switch (current_state) {
 		case ResponseParserState::ResponseProtocolH:
@@ -95,6 +98,8 @@ inline std::unique_ptr<HTTPResponseMessage> ParseHTTP1_1ResponseMessage(
 			break;
 		case ResponseParserState::ResponseProtocolVersionMinor:
 			if (std::isdigit(*start_buffer)) {
+				http_message->setHTTPVersion(
+				    HTTPVersion::HTTP1_1);
 				increment_buffer_offset();
 			} else if (*start_buffer ==
 				   static_cast<char>(LexConsts::SP)) {
@@ -112,6 +117,9 @@ inline std::unique_ptr<HTTPResponseMessage> ParseHTTP1_1ResponseMessage(
 				increment_buffer_offset();
 			} else if (*start_buffer ==
 				   static_cast<char>(LexConsts::SP)) {
+				http_message->setResponseCode(
+				    static_cast<HTTPResponseCodes>(std::atoi(
+					http_message->getTempStatusCode())));
 				current_state =
 				    ResponseParserState::ResponseReasonPhrase;
 				increment_buffer_offset();
@@ -162,17 +170,13 @@ inline std::unique_ptr<HTTPResponseMessage> ParseHTTP1_1ResponseMessage(
 		case ResponseParserState::HeaderValue:
 			if (*start_buffer == static_cast<char>(LexConsts::CR)) {
 				current_state =
-				    ResponseParserState::HeaderValue;
+				    ResponseParserState::HeaderValueLF;
 				increment_buffer_offset();
-			} else if (*start_buffer ==
-				   static_cast<char>(LexConsts::SP)) {
+			} else if (is_text(*start_buffer)) {
 				if (*(start_buffer - 1) == ':') {
 					increment_buffer_offset();
-				} else {
-					current_state =
-					    ResponseParserState::ProtocolError;
+					break;
 				}
-			} else if (is_text(*start_buffer)) {
 				http_message->pushBackHeaderValue(
 				    *start_buffer);
 				increment_buffer_offset();
@@ -210,6 +214,7 @@ inline std::unique_ptr<HTTPResponseMessage> ParseHTTP1_1ResponseMessage(
 		case ResponseParserState::ResponseMessageBody:
 			http_message->pushBackRawBody(
 			    std::string{start_buffer, end_buffer});
+			current_state = ResponseParserState::ParsingDone;
 			goto FINISH;
 		case ResponseParserState::ParsingDone:
 			goto FINISH;

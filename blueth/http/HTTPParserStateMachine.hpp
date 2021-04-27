@@ -8,8 +8,6 @@
 #include <memory>
 #include <utility>
 
-#include <iostream>
-#define print_me std::cout << "Here" << std::endl;
 namespace blueth::http {
 
 // Parser for HTTP Requet Message

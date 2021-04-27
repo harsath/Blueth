@@ -101,6 +101,8 @@ class HTTPResponseMessage {
 	BLUETH_FORCE_INLINE void setHTTPVersion(HTTPVersion version) noexcept;
 	BLUETH_FORCE_INLINE HTTPVersion getHTTPVersion() const noexcept;
 	void setRawBody(std::unique_ptr<io::IOBuffer<char>> io_buffer) noexcept;
+	BLUETH_FORCE_INLINE const std::unique_ptr<io::IOBuffer<char>> &
+	constGetRawBody() const noexcept;
 	template <typename T>
 	BLUETH_FORCE_INLINE std::optional<std::string>
 	getHeaderValue(T &&header_name) noexcept;
@@ -335,6 +337,11 @@ HTTPResponseMessage::getHTTPVersion() const noexcept {
 inline void HTTPResponseMessage::setRawBody(
     std::unique_ptr<io::IOBuffer<char>> io_buffer) noexcept {
 	raw_body_ = std::move(io_buffer);
+}
+
+BLUETH_FORCE_INLINE inline const std::unique_ptr<io::IOBuffer<char>> &
+HTTPResponseMessage::constGetRawBody() const noexcept {
+	return raw_body_;
 }
 
 template <typename T>
