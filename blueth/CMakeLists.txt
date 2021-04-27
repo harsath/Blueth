@@ -31,7 +31,11 @@ set(
 set(
 	CONCURRENCY
 	concurrency/AsyncEventLoop.hpp
-)
+	)
+set(
+	CODEC
+	codec/LineBasedFrameDecoder.hpp
+	)
 add_library(
 	${LIB_NAME} 
 	STATIC ${CONTAINER_DIR_FILES}
@@ -39,6 +43,7 @@ add_library(
 	${IO_DIR_FILES}
 	${CONCURRENCY}
 	${UTILS}
+	${CODEC}
 	)
 target_link_libraries(
 	${LIB_NAME}

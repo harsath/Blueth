@@ -5,7 +5,7 @@
 #include <iostream>
 
 using namespace blueth;
-TEST(HttpStateMachine, HttpStateMachineGET) {
+TEST(HttpStateMachine, TestOne) {
 	{ // Valid HTTP GET message
 		std::unique_ptr<http::HTTPRequestMessage> http_message =
 		    http::HTTPRequestMessage::create();
