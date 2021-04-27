@@ -27,7 +27,3 @@ target_link_libraries(
 	libblueth
 	pthread
 	)
-add_test(
-	NAME ${TEST_HTTP_EXEC_NAME}
-	COMMAND ${TEST_HTTP_EXEC_NAME}
-	)
