@@ -57,7 +57,7 @@ template <typename BufferType> class NetworkStream {
 	 * IOBuffer is high enough to hold the request bytes read from wire. If
 	 * there is less space on the IOBuffer than we need to read, we increase
 	 * the memory capacity of the IOBuffer
-	 * @param Returns number of bytes read on sucess and negative value on
+	 * @return Returns number of bytes read on sucess and negative value on
 	 * failur. We assume that a user had a logic to handle the failur in a
 	 * graceful way on their logic
 	 */
@@ -79,7 +79,7 @@ template <typename BufferType> class NetworkStream {
 	 * wire
 	 * @return Returns number of bytes written on success and a negative
 	 * value if the operation fails. We assume that a user had a logic to
-	 * handle the failur in a graceful way on their logic
+	 * handle the failur in a graceful way
 	 */
 	virtual int streamWrite(const std::string &data) noexcept(false) = 0;
 	// TODO: Maybe use std::string_view for the 'data'? since we only need

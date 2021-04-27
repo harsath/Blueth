@@ -2,7 +2,7 @@
 #include "HTTPMessage.hpp"
 #include "http/HTTPConstants.hpp"
 #include "http/HTTPHeaders.hpp"
-#include "http/HTTPParserStateMachine.hpp"
+#include "http/HTTPParserStateMachineResponse.hpp"
 #include "io/IOBuffer.hpp"
 #include "net/NetworkStream.hpp"
 #include "net/SyncNetworkStreamClient.hpp"
@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <string>
 
 namespace blueth::http {
@@ -29,14 +30,16 @@ class HTTPProxyClient {
 	std::uint16_t origin_server_port_;
 	std::optional<std::string> proxy_username_;
 	std::optional<std::string> proxy_passphrase_;
+	bool proxy_connection_made_{false};
 
       public:
 	/**
 	 * Takes a network handler 'net::NetworkStream' object which already
-	 * have a open connection to the desired HTTP Proxy to send/recv raw
-	 * bytes Since we can transparently place SSL/Plain-text network
-	 * clients, we don't have to bother with if the HTTP Proxy is over SSL
-	 * or Plain-text since it's an interface
+	 * have a open connection to the desired HTTP Proxy server to send/recv
+	 * raw bytes. Since we can transparently place SSL/Plain-text network
+	 * clients, we don't have to bother with if the HTTP Proxy server is
+	 * connected over SSL or Plain-text since it's something taken care for
+	 * use by the 'net::NetworkStream' interface
 	 *
 	 * @param network_handler Underlying networking handler which have an
 	 * open connection.
@@ -44,10 +47,11 @@ class HTTPProxyClient {
 	HTTPProxyClient(
 	    std::unique_ptr<net::NetworkStream<char>> network_handler);
 	/**
-	 * Make a HTTP Proxy Conenct request to the HTTP Proxy endpoint and
-	 * return the status. If the connection to the origin-server is
-	 * successful, HTTP 2xx message is returned by the HTTP Proxy,
-	 * indicating that we now can tunnel the request bytes
+	 * Make a HTTP Proxy CONNECT request to the HTTP Proxy server endpoint,
+	 * parse the Proxy's response message and return the status. If the
+	 * connection to the origin-server is successful, HTTP 2xx message is
+	 * returned by the HTTP Proxy, indicating that we now can tunnel the
+	 * bytes sent from the 'http::HTTPProxyClient' interface
 	 *
 	 * Optionally, the interface also supports HTTP Proxy Authentication to
 	 * establish the authority to create a tunnel through the Proxy The
@@ -60,10 +64,12 @@ class HTTPProxyClient {
 	 *
 	 * HTTPProxyErrorCode::ConnectionSuccess:
 	 * 	Means, we created a HTTP Tunnel through the Proxy successfully.
+	 * we can send/recv bytes through the HTTP Proxy server to the
+	 * origin-server endpoint
 	 *
 	 * HTTPProxyErrorCode::NoProxySupport:
 	 * 	Means, the HTTP Proxy endpoint doesn't implement the HTTP
-	 * CONNECT tunnel requet
+	 * CONNECT tunnel request
 	 *
 	 * HTTPProxyErrorCode::AuthFailed:
 	 * 	Means, the username or password is invalid.
@@ -106,15 +112,33 @@ class HTTPProxyClient {
 	 *
 	 * @param data std::string representation of the raw byte to write the
 	 * proxy
+	 * @return Returns number of bytes written on success and negative value
+	 * on a failue. We assume that the user have a logic in-place to handle
+	 * the write error in a graceful way.
 	 */
-	void writeProxy(const std::string &data) noexcept(false);
+	template <typename StringType>
+	int writeProxy(StringType &&data) noexcept(false);
 	/**
-	 * Get the Origin server we are connected to through this HTTP Proxy or
-	 * trying to connect to(or failed)
+	 * Get the Origin server hostname we are connected to through this HTTP
+	 * Proxy or trying to connect to(or failed)
 	 *
 	 * @return origin server's hostname
 	 */
-	std::string getOriginServer() const noexcept;
+	std::string getOriginServerHost() const noexcept;
+	/**
+	 * Get the Origin server's port number we are connected to.
+	 *
+	 * @return origin server's port number
+	 */
+	std::uint16_t getOriginServerPort() const noexcept;
+	/**
+	 * Check if the connection is made to the HTTP Proxy so that the bytes
+	 * written on the wire are tunned through the Proxy server to the origin
+	 * server
+	 *
+	 * @return Boolean flag indicating if the connection made or not
+	 */
+	bool connectedToProxy() const noexcept;
 	/**
 	 * Get the Proxy's username info, if we had specified it in the past for
 	 * the authentication of the HTTP proxy
@@ -153,24 +177,91 @@ HTTPProxyReturnCode HTTPProxyClient::makeConnection(
 	connect_request_message.addHeader("Host", hostname_and_port);
 	connect_request_message.addHeader("User-Agent", "blueth/http-client");
 	connect_request_message.addHeader("Proxy-Connection", "Keep-Alive");
+	if (proxy_username_ != std::nullopt &&
+	    proxy_passphrase_ != std::nullopt) {
+		std::string username_passphrase_b64 =
+		    proxy_username_.value() + ":" + proxy_passphrase_.value();
+		connect_request_message.addHeader(
+		    "Proxy-Authorization",
+		    "Basic " + base64::base64_encode(
+				   (const unsigned char *)
+				       username_passphrase_b64.c_str(),
+				   username_passphrase_b64.size()));
+	}
 	int write_ret = network_handler_->streamWrite(
 	    connect_request_message.buildRawMessage());
 	if (write_ret < 0) return HTTPProxyReturnCode::NetworkError;
 	net::NetworkStream<char>::const_buffer_reference_type proxy_response =
 	    network_handler_->constGetIOBuffer();
-	std::unique_ptr<HTTPRequestMessage> http_response_message =
-	    HTTPRequestMessage::create();
-	ParserState current_state = ParserState::RequestLineBegin;
-	std::pair<ParserState, std::unique_ptr<HTTPRequestMessage>>
-	    parsed_request =
-		ParseHTTP1_1RequestMessage(proxy_response, current_state,
-					   std::move(http_response_message));
-	http_response_message = std::move(parsed_request.second);
-	if(parsed_request.first == ParserState::ParsingDone){
-		if(http_response_message->get)
-	}else{
+	std::unique_ptr<HTTPResponseMessage> http_response_message =
+	    HTTPResponseMessage::create();
+	ResponseParserState current_state =
+	    ResponseParserState::ResponseProtocolH;
+	std::unique_ptr<HTTPResponseMessage> parsed_message =
+	    ParseHTTP1_1ResponseMessage(proxy_response, current_state,
+					std::move(http_response_message));
+	if (current_state == ResponseParserState::ProtocolError)
+		return HTTPProxyReturnCode::InvalidResponse;
+	if (current_state == ResponseParserState::ParsingDone) {
+		if (parsed_message->getResponseCode() ==
+		    HTTPResponseCodes::Unauthorized)
+			return HTTPProxyReturnCode::ProxyAuthRequired;
+		if (parsed_message->getResponseCode() ==
+		    HTTPResponseCodes::Ok) {
+			proxy_connection_made_ = true;
+			return HTTPProxyReturnCode::ConnectionSuccess;
+		} else {
+			return HTTPProxyReturnCode::NoProxySupport;
+		}
+	} else {
 		return HTTPProxyReturnCode::InvalidResponse;
 	}
+}
+
+std::string HTTPProxyClient::readProxy(size_t read_length) noexcept(false) {
+	if (!proxy_connection_made_)
+		throw std::runtime_error{
+		    "No proxy connection to the origin-server"};
+	int ret = network_handler_->streamRead(read_length);
+	if (ret < 0) return "";
+	std::string returner{
+	    network_handler_->constGetIOBuffer()->getStartOffsetPointer(),
+	    network_handler_->constGetIOBuffer()->getEndOffsetPointer()};
+	net::NetworkStream<char>::buffer_type io_buffer =
+	    network_handler_->getIOBuffer();
+	// Currently we relay on blocking-read/write through the network
+	io_buffer->clear();
+	network_handler_->setIOBuffer(std::move(io_buffer));
+	return returner;
+}
+
+template <typename StringType>
+int HTTPProxyClient::writeProxy(StringType &&data) noexcept(false) {
+	if (!proxy_connection_made_)
+		throw std::runtime_error{
+		    "No proxy connection to the origin-server"};
+	return network_handler_->streamWrite(std::forward<StringType>(data));
+}
+
+std::string HTTPProxyClient::getOriginServerHost() const noexcept {
+	return origin_server_hostname_;
+}
+
+std::uint16_t HTTPProxyClient::getOriginServerPort() const noexcept {
+	return origin_server_port_;
+}
+
+bool HTTPProxyClient::connectedToProxy() const noexcept {
+	return proxy_connection_made_;
+}
+
+std::optional<std::string> HTTPProxyClient::getProxyUsername() const noexcept {
+	return proxy_username_;
+}
+
+std::optional<std::string>
+HTTPProxyClient::getProxyPassphrase() const noexcept {
+	return proxy_passphrase_;
 }
 
 } // namespace blueth::http
