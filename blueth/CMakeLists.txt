@@ -1,4 +1,5 @@
 set(LIB_NAME libblueth)
+set(CMAKE_CXX_STANDARD 20)
 set(
 	CONTAINER_DIR_FILES
 	containers/matrix.hpp
@@ -57,3 +58,5 @@ target_include_directories(
 	${LIB_NAME}
 	PUBLIC ./
 )
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
