@@ -37,8 +37,8 @@ class Socket {
 	Domain _domain;
 	int _file_des{};
 	SockType _sock_type;
-	struct sockaddr_in _server_sockaddr;
-	int _endpoint_sock_len{};
+	struct sockaddr_in _socket_sockaddr;
+	socklen_t _endpoint_sockaddr_len{};
 
       public:
 	Socket(const std::string &IP_addr, const std::uint16_t &port,
@@ -54,7 +54,7 @@ class Socket {
 	const int getSocketBacklog() const noexcept;
 	const Domain getSocketDomain() const noexcept;
 	const int getFileDescriptor() const noexcept;
-	const int acceptLoop();
+	int acceptOnce();
 	// Possable we can replace `char*` with an implementation of a IOBuffer
 	// object in future
 	void readBuffer(char *read_buffer, std::size_t max_read_buff);
@@ -75,8 +75,8 @@ inline Socket &Socket::operator=(Socket &&tcp_endpoint) {
 	std::swap(_domain, tcp_endpoint._domain);
 	std::swap(_file_des, tcp_endpoint._file_des);
 	std::swap(_sock_type, tcp_endpoint._sock_type);
-	std::swap(_server_sockaddr, tcp_endpoint._server_sockaddr);
-	std::swap(_endpoint_sock_len, tcp_endpoint._endpoint_sock_len);
+	std::swap(_socket_sockaddr, tcp_endpoint._socket_sockaddr);
+	std::swap(_endpoint_sockaddr_len, tcp_endpoint._endpoint_sockaddr_len);
 	return *this;
 }
 
@@ -87,13 +87,18 @@ inline Socket::Socket(Socket &&tcp_endpoint) {
 	std::swap(_domain, tcp_endpoint._domain);
 	std::swap(_file_des, tcp_endpoint._file_des);
 	std::swap(_sock_type, tcp_endpoint._sock_type);
-	std::swap(_server_sockaddr, tcp_endpoint._server_sockaddr);
-	std::swap(_endpoint_sock_len, tcp_endpoint._endpoint_sock_len);
+	std::swap(_socket_sockaddr, tcp_endpoint._socket_sockaddr);
+	std::swap(_endpoint_sockaddr_len, tcp_endpoint._endpoint_sockaddr_len);
 }
 
 inline void Socket::m_listen_socket() {
 	int ret_code = ::listen(_file_des, _endpoint_backlog);
 	err_check(ret_code, "linux listen()");
+}
+
+inline int Socket::acceptOnce() {
+	return ::accept(_file_des, (sockaddr *)&_socket_sockaddr,
+			&_endpoint_sockaddr_len);
 }
 
 inline Socket::Socket(const std::string &IP_addr, const std::uint16_t &port,
@@ -114,20 +119,20 @@ inline void Socket::setSocketOption(SockOptLevel sock_level,
 }
 
 inline void Socket::m_create_socket() {
-	std::memset(&_server_sockaddr, 0, sizeof(sockaddr_in));
-	_server_sockaddr.sin_family = static_cast<int>(_domain);
+	std::memset(&_socket_sockaddr, 0, sizeof(sockaddr_in));
+	_socket_sockaddr.sin_family = static_cast<int>(_domain);
 	inet_pton(static_cast<int>(_domain), _IP_addr.c_str(),
-		  &_server_sockaddr.sin_addr);
-	_server_sockaddr.sin_port = htons(_port);
+		  &_socket_sockaddr.sin_addr);
+	_socket_sockaddr.sin_port = htons(_port);
 	_file_des = ::socket(static_cast<int>(_domain),
 			     static_cast<int>(_sock_type), 0);
 	err_check(_file_des, "socket() creation");
-	_endpoint_sock_len = sizeof(_server_sockaddr);
+	_endpoint_sockaddr_len = sizeof(_socket_sockaddr);
 }
 
 inline void Socket::bindSock() noexcept {
 	int ret_code =
-	    ::bind(_file_des, reinterpret_cast<sockaddr *>(&_server_sockaddr),
+	    ::bind(_file_des, reinterpret_cast<sockaddr *>(&_socket_sockaddr),
 		   sizeof(sockaddr_in));
 	err_check(ret_code, "bind() error");
 	m_listen_socket();
