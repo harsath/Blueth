@@ -96,7 +96,7 @@ SyncNetworkStreamClient::SyncNetworkStreamClient(
 	::bzero(addr.sin_zero, 8);
 	int connect_ret =
 	    ::connect(endpoint_fd_, reinterpret_cast<sockaddr *>(&addr),
-		      sizeof(sockaddr));
+		      sizeof(addr));
 	if (connect_ret < 0) {
 		std::perror("connect()");
 		throw std::runtime_error{std::strerror(errno)};
