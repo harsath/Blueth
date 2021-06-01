@@ -2,7 +2,9 @@
 use warnings;
 use strict;
 
-my @apt_dependencies = ("cmake", "ninja-build", "gcc-9", "g++-9");
+my @apt_dependencies = (
+	"cmake", "ninja-build", "gcc-9", "g++-9", "libssl-dev", "git"
+);
 `sudo apt-get update -y`;
 `sudo add-apt-repository ppa:ubuntu-toolchain-r/test`;
 my $apt_cmd = "sudo apt-get install ";
@@ -22,3 +24,8 @@ print "\n\n#### CMake Version: ####\n\n";
 system "cmake --version";
 print "#### GCC Version: ####\n\n";
 system "gcc --version";
+
+`sudo apt install libssl-dev`;
+print "\n\n#### Installing wolfSSLL ####\n\n";
+system "git clone https://github.com/wolfSSL/wolfssl.git";
+system "cd wolfssl && ./autogen.sh && ./configure && make && sudo make install";
