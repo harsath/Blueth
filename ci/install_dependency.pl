@@ -3,7 +3,7 @@ use warnings;
 use strict;
 
 my @apt_dependencies = (
-	"cmake", "ninja-build", "gcc-9", "g++-9", "libssl-dev", "git"
+	"cmake", "ninja-build", "gcc-9", "g++-9", "libssl-dev", "git", "openssl"
 );
 `sudo apt-get update -y`;
 `sudo add-apt-repository ppa:ubuntu-toolchain-r/test`;
