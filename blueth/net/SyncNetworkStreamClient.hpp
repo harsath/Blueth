@@ -76,6 +76,7 @@ SyncNetworkStreamClient::SyncNetworkStreamClient(
       stream_type_{StreamType::SyncStream} {
 	::hostent *hoste;
 	::sockaddr_in addr;
+	// @@@ gethostbyname alternative
 	if ((hoste = ::gethostbyname(endpoint_host_.c_str())) == nullptr) {
 		throw std::runtime_error{std::strerror(errno)};
 	}

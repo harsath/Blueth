@@ -20,7 +20,7 @@ namespace blueth::net {
 
 class SyncNetworkStreamClientSSL final : public NetworkStream<char> {
       private:
-	std::string endpoint_host_;
+	std::string endpoint_ip_;
 	std::uint16_t endpoint_port_;
 	int endpoint_fd_;
 	StreamProtocol stream_protocol_;
@@ -40,18 +40,18 @@ class SyncNetworkStreamClientSSL final : public NetworkStream<char> {
 	constexpr static std::size_t default_io_buffer_size = 2048;
 	template <typename T1, typename T2, typename T3, typename T4>
 	static std::unique_ptr<NetworkStream<char>>
-	create(T1 &&endpoint_host, T2 &&endpoint_port, T3 &&stream_protocol,
-	       T4 &&client_cert_path) {
+	create(T1 &&endpoint_ip, T2 &&endpoint_port, T3 &&stream_protocol,
+	       T4 &&ca_cert_path) {
 		return std::make_unique<SyncNetworkStreamClientSSL>(
-		    std::forward<T1>(endpoint_host),
+		    std::forward<T1>(endpoint_ip),
 		    std::forward<T2>(endpoint_port),
 		    std::forward<T3>(stream_protocol),
-		    std::forward<T4>(client_cert_path));
+		    std::forward<T4>(ca_cert_path));
 	}
-	SyncNetworkStreamClientSSL(
-	    std::string endpoint_host, std::uint16_t endpoint_port,
-	    StreamProtocol stream_protocol,
-	    std::string client_cert_path) noexcept(false);
+	SyncNetworkStreamClientSSL(std::string endpoint_host,
+				   std::uint16_t endpoint_port,
+				   StreamProtocol stream_protocol,
+				   std::string ca_cert_path) noexcept(false);
 	int streamRead(size_t read_length) noexcept(false) override;
 	int streamWrite(const std::string &data) noexcept(false) override;
 	void flushBuffer() noexcept(false) override;
@@ -74,35 +74,33 @@ class SyncNetworkStreamClientSSL final : public NetworkStream<char> {
 	~SyncNetworkStreamClientSSL();
 };
 
-// @@@ Right now, the Sync SSL-Stream is TCP only
+/**
+ * Right now, we'd need to manually resolve the DNS name and give the IPv4
+ * address to the stream client. This will be upgraded to handle the DNS name
+ * resolution in the future release.
+ */
 SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
-    std::string endpoint_host, std::uint16_t endpoint_port,
-    StreamProtocol stream_protocol,
-    std::string client_cert_path) noexcept(false)
-    : endpoint_host_{std::move(endpoint_host)}, endpoint_port_{endpoint_port},
+    std::string endpoint_ip, std::uint16_t endpoint_port,
+    StreamProtocol stream_protocol, std::string ca_cert_path) noexcept(false)
+    : endpoint_ip_{std::move(endpoint_ip)}, endpoint_port_{endpoint_port},
       stream_protocol_{stream_protocol}, stream_mode_{StreamMode::Client},
       stream_type_{StreamType::SSLSyncStream} {
-
-	::hostent *hoste;
-	::sockaddr_in addr;
 	endpoint_fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
-	hoste = ::gethostbyname(endpoint_host_.c_str());
-	if (hoste == nullptr) {
-		std::perror("gethostbyname()");
-		throw std::runtime_error{std::strerror(errno)};
+	if (endpoint_fd_ == -1) {
+		std::perror("socket");
+		throw std::runtime_error{"socket()"};
 	}
-	if (endpoint_fd_ < 0) {
-		std::perror("socket()");
-		throw std::runtime_error{std::strerror(errno)};
+
+	::sockaddr_in addr;
+	if (inet_pton(AF_INET, endpoint_ip_.c_str(), &addr.sin_addr) != 1) {
+		std::perror("inet_pton");
+		throw std::runtime_error{"inet_pton()"};
 	}
-	addr.sin_addr = *(reinterpret_cast<::in_addr *>(hoste->h_addr));
-	// inet_pton(AF_INET, endpoint_host_.c_str(), &addr.sin_addr.s_addr);
 	addr.sin_port = ::htons(endpoint_port_);
 	addr.sin_family = AF_INET;
 	::bzero(addr.sin_zero, 8);
-	int connect_ret =
-	    ::connect(endpoint_fd_, reinterpret_cast<sockaddr *>(&addr),
-		      sizeof(sockaddr));
+	int connect_ret = ::connect(
+	    endpoint_fd_, reinterpret_cast<sockaddr *>(&addr), sizeof(addr));
 	if (connect_ret < 0) {
 		std::perror("connect()");
 		throw std::runtime_error{std::strerror(errno)};
@@ -123,8 +121,8 @@ SyncNetworkStreamClientSSL::SyncNetworkStreamClientSSL(
 		close(endpoint_fd_);
 		throw std::runtime_error{"wolfSSL_CTX_new()"};
 	}
-	ret = wolfSSL_CTX_load_verify_locations(
-	    ctx_.get(), client_cert_path.c_str(), nullptr);
+	ret = wolfSSL_CTX_load_verify_locations(ctx_.get(),
+						ca_cert_path.c_str(), nullptr);
 	if (ret != SSL_SUCCESS) {
 		fprintf(stderr,
 			"Error: failed to load the client cert-file: %d",

@@ -59,11 +59,11 @@ int main(int argc, const char *argv[]){
 	}
 	net::makeSocketNonBlocking(sock_fd);
 
-	concurrency::EventLoopBase<PeerStateImpl>* evl = new concurrency::AsyncEpollEventLoop<PeerStateImpl>(sock_fd, 1000);
-	evl->registerCallbackForEvent(on_accept, concurrency::EventType::AcceptEvent);
-	evl->registerCallbackForEvent(on_write, concurrency::EventType::WriteEvent);
-	evl->registerCallbackForEvent(on_read, concurrency::EventType::ReadEvent);
-	evl->startEventloop();
+	// concurrency::EventLoopBase<PeerStateImpl>* evl = new concurrency::AsyncEpollEventLoop<PeerStateImpl>(sock_fd, 1000);
+	// evl->registerCallbackForEvent(on_accept, concurrency::EventType::AcceptEvent);
+	// evl->registerCallbackForEvent(on_write, concurrency::EventType::WriteEvent);
+	// evl->registerCallbackForEvent(on_read, concurrency::EventType::ReadEvent);
+	// evl->startEventloop();
 	
 	return 0;
 }
