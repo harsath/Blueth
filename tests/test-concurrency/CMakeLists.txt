@@ -18,8 +18,12 @@ add_executable(
 target_link_libraries(
 	async_event_loop_test
 	libblueth
+	gtest
+	gtest_main
+	pthread
 	)
 
+set(CMAKE_CXX_FLAGS "-Wall -g3 -ggdb -fno-omit-frame-pointer")
 add_executable(
 	thread_pool_exec
 	test-ThreadPoolExecutor.cpp

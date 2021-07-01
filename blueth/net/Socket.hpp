@@ -37,12 +37,13 @@ class Socket {
 	Domain _domain;
 	int _file_des{};
 	SockType _sock_type;
+	// @@@ Currently, it only supports IPv4
 	struct sockaddr_in _socket_sockaddr;
 	socklen_t _endpoint_sockaddr_len{};
 
       public:
-	Socket(const std::string &IP_addr, const std::uint16_t &port,
-	       int backlog, Domain communication_domain, SockType socket_type);
+	Socket(std::string IP_addr, std::uint16_t port, int backlog,
+	       Domain communication_domain, SockType socket_type);
 	Socket(const Socket &) = delete;
 	Socket(Socket &&);
 	Socket() = default;
@@ -101,10 +102,9 @@ inline int Socket::acceptOnce() {
 			&_endpoint_sockaddr_len);
 }
 
-inline Socket::Socket(const std::string &IP_addr, const std::uint16_t &port,
-		      int backlog, Domain communication_domain,
-		      SockType socket_type)
-    : _IP_addr{IP_addr}, _port{port}, _endpoint_backlog{backlog},
+inline Socket::Socket(std::string IP_addr, std::uint16_t port, int backlog,
+		      Domain communication_domain, SockType socket_type)
+    : _IP_addr{std::move(IP_addr)}, _port{port}, _endpoint_backlog{backlog},
       _domain{communication_domain}, _sock_type{socket_type} {
 	m_create_socket();
 }
