@@ -18,7 +18,8 @@ my $TEST_BINS = {
 	http => "./tests/test-http/test_http",
 	net_one => "./tests/test-net/sync_net_stream_client",
 	thread_pool_executor => "./tests/test-concurrency/thread_pool_exec",
-	codec => "./tests/test-codec/test_codec"
+	codec => "./tests/test-codec/test_codec",
+	async_event_loop => "./tests/test-concurrency/async_event_loop_test"
 };
 if(-d $BUILD_DIR){
 	print "Build dir already exists, remove that first\n"; exit(1);
@@ -38,8 +39,7 @@ sub build_binary {
 
 sub run_tests {
 	my $test_cmd = ${$TEST_BINS}{container}." && ".${$TEST_BINS}{io}." && ".${$TEST_BINS}{http}." && ".${$TEST_BINS}{thread_pool_executor};
-	$test_cmd .= " && ".${$TEST_BINS}{codec};
-	$test_cmd .= " && ".${$TEST_BINS}{net_one} unless defined $ENV{REMOTE_TEST_RUN};
+	$test_cmd .= " && ".${$TEST_BINS}{codec}." && ".${$TEST_BINS}{net_one}." && ".${$TEST_BINS}{async_event_loop};
 	my $exit_code = system($test_cmd);
 	return $exit_code;
 }

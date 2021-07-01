@@ -1,69 +1,95 @@
+#include "concurrency/AsyncEventLoop.hpp"
 #include "concurrency/internal/EventLoopBase.hpp"
+#include "io/IOBuffer.hpp"
+#include "net/NetworkStream.hpp"
 #include "net/Socket.hpp"
-#include <asm-generic/socket.h>
-#include <concurrency/AsyncEventLoop.hpp>
+#include "net/SyncNetworkStreamClient.hpp"
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <gtest/gtest.h>
 #include <iostream>
-#include <netinet/in.h>
-#include <sys/socket.h>
+#include <thread>
 
 using namespace blueth;
-class PeerStateImpl {
-	char *buffer;
-	size_t buffer_len;
-	char *cursor;
+
+const char *server_address = "127.0.0.1";
+const std::uint16_t server_port = 9090;
+const size_t epoll_size = 50;
+const int server_timeout = 3000;
+const int server_backlog = 50;
+const std::string client_reply = "Hello, from client";
+const std::string server_reply = "Hello, from server";
+
+enum class PeerConnectionState { NotConnected, Connected, Handshake, Closed };
+
+class PeerState {
+      public:
+	PeerState() : peer_state{PeerConnectionState::NotConnected} {
+		io_buffer = std::make_shared<io::IOBuffer<char>>(1048);
+	}
+	int peer_fingerprint;
+	PeerConnectionState peer_state;
+	std::shared_ptr<io::IOBuffer<char>> io_buffer;
 };
 
-static concurrency::FDStatus on_read(concurrency::PeerStateHolderBase<PeerStateImpl> *peer_state){
-	printf("Ready read\n");
-	exit(1);
-	return concurrency::WantNoReadWrite;
-}
-
-static concurrency::FDStatus on_write(concurrency::PeerStateHolderBase<PeerStateImpl> *peer_state){
-	printf("Ready write\n");
-	exit(1);
-	return concurrency::WantRead;
-}
-
-static concurrency::FDStatus on_accept(concurrency::PeerStateHolderBase<PeerStateImpl> *peer_state){
-	printf("accept connection\n");
+concurrency::FDStatus
+on_write(concurrency::PeerStateHolder *peer_state_holder,
+	 std::shared_ptr<concurrency::EventLoopBase<PeerState>> io_context) {
+	PeerState *peer_state =
+	    CAST_TO_PEERSTATE_PTR(peer_state_holder->getPeerState());
+	peer_state->io_buffer->appendRawBytes(server_reply.c_str(),
+					      server_reply.size());
+	int written_bytes =
+	    io_context->writeToPeer(peer_state_holder, peer_state->io_buffer);
+	EXPECT_EQ(written_bytes, server_reply.size());
+	std::cout << "written: " << written_bytes << std::endl;
 	return concurrency::WantWrite;
 }
 
-int main(int argc, const char *argv[]){
-	int sock_fd = ::socket(AF_INET, SOCK_STREAM, 0);
-	short port = 9999;
-	if(sock_fd < 0){
-		std::perror("socket");
-		::exit(EXIT_FAILURE);
-	}
-	int opt = 1;
-	if(::setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0){
-		std::perror("setsockopt");
-		::exit(EXIT_FAILURE);
-	}
-	struct sockaddr_in serv_addr;
-	memset(&serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	serv_addr.sin_port = htons(port);
-	if(::bind(sock_fd, (sockaddr*)&serv_addr, sizeof(serv_addr)) < 0){
-		std::perror("bind");
-		::exit(EXIT_FAILURE);
-	}
-	if(::listen(sock_fd, 10)){
-		std::perror("listen");
-		::exit(EXIT_FAILURE);
-	}
-	net::makeSocketNonBlocking(sock_fd);
+concurrency::FDStatus
+on_read(concurrency::PeerStateHolder *peer_state_holder,
+	std::shared_ptr<concurrency::EventLoopBase<PeerState>> io_context) {
+	PeerState *peer_state =
+	    CAST_TO_PEERSTATE_PTR(peer_state_holder->getPeerState());
+	io_context->readFromPeer(peer_state_holder, peer_state->io_buffer);
+	std::string read_data{peer_state->io_buffer->getStartOffsetPointer(),
+			      peer_state->io_buffer->getEndOffsetPointer()};
+	std::cout << "read: " << read_data << std::endl;
+	EXPECT_EQ(read_data, client_reply);
+	return concurrency::WantNoReadWrite;
+}
 
-	// concurrency::EventLoopBase<PeerStateImpl>* evl = new concurrency::AsyncEpollEventLoop<PeerStateImpl>(sock_fd, 1000);
-	// evl->registerCallbackForEvent(on_accept, concurrency::EventType::AcceptEvent);
-	// evl->registerCallbackForEvent(on_write, concurrency::EventType::WriteEvent);
-	// evl->registerCallbackForEvent(on_read, concurrency::EventType::ReadEvent);
-	// evl->startEventloop();
-	
-	return 0;
+concurrency::FDStatus
+on_accept(concurrency::PeerStateHolder *peer_state_holder,
+	  std::shared_ptr<concurrency::EventLoopBase<PeerState>> io_context) {
+	return concurrency::WantRead;
+}
+
+TEST(AsyncEventLoopTest, EpollTest) {
+	std::shared_ptr<concurrency::EventLoopBase<PeerState>> event_loop =
+	    concurrency::AsyncEpollEventLoop<PeerState>::create(
+		server_address, server_port, epoll_size, server_backlog,
+		server_timeout);
+	event_loop->registerCallbackForEvent(
+	    on_write, concurrency::EventType::WriteEvent);
+	event_loop->registerCallbackForEvent(on_read,
+					     concurrency::EventType::ReadEvent);
+	event_loop->registerCallbackForEvent(
+	    on_accept, concurrency::EventType::AcceptEvent);
+	std::thread client_thread([=]() {
+		using namespace std::chrono_literals;
+		std::this_thread::sleep_for(1000ms);
+		std::unique_ptr<net::NetworkStream<char>> client =
+		    net::SyncNetworkStreamClient::create(
+			server_address, server_port, net::StreamProtocol::TCP);
+		client->streamWrite(client_reply);
+		client->streamRead(50);
+		std::string read_data{
+		    client->constGetIOBuffer()->getStartOffsetPointer(),
+		    client->constGetIOBuffer()->getEndOffsetPointer()};
+		EXPECT_EQ(read_data, server_reply);
+	});
+	event_loop->startEventloop();
+	client_thread.join();
 }
