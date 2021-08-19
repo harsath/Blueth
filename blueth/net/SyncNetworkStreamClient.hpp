@@ -83,7 +83,7 @@ SyncNetworkStreamClient::SyncNetworkStreamClient(
 	if (stream_protocol_ == StreamProtocol::TCP) {
 		endpoint_fd_ = ::socket(AF_INET, SOCK_STREAM, 0);
 	} else if (stream_protocol_ == StreamProtocol::UDP) {
-		endpoint_fd_ = ::socket(AF_INET, SOCK_DGRAM, 0);
+		throw std::runtime_error{"umimplemented error"};
 	} else {
 		throw std::runtime_error{"invalid StreamProtocol"};
 	}
