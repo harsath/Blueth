@@ -7,10 +7,15 @@
 
 namespace blueth::http {
 // TODO: add TLS support, currently it only supports plaintext-HTTP
-template <typename PeerState> class HTTPMux {
-	using HandlerCallbackType = std::function<void(
-	    HTTPRequestMessage,
-	    std::shared_ptr<concurrency::EventLoopBase<PeerState>>)>;
+namespace internal {
+	class PeerStateInternal : public concurrency::PeerStateHolder {
+		
+	};
+} // namespace internal
+class HTTPMux {
+	using HandlerCallbackType =
+	    std::function<std::shared_ptr<HTTPResponseMessage>(
+		std::shared_ptr<HTTPRequestMessage>)>;
 
       public:
 	/**
@@ -25,8 +30,8 @@ template <typename PeerState> class HTTPMux {
 	 * handler is being made
 	 *
 	 * @param endpoint The HTTP request's endpoint
-	 * @param The callback handler that need to be invoked when a request
-	 * comes to this particular endpoint
+	 * @param callback The callback handler that need to be invoked when a
+	 * request comes to this particular endpoint
 	 */
 	void addHandler(std::string endpoint, HandlerCallbackType callback);
 	/**
@@ -35,11 +40,13 @@ template <typename PeerState> class HTTPMux {
 	void startAndListen();
 
       private:
-	std::unordered_map<
-	    std::string, std::shared_ptr<concurrency::EventLoopBase<PeerState>>>
+	std::unordered_map<std::string, HandlerCallbackType>
 	    endpoint_fn_ptr_map_;
-	bool is_ssl_;
+	std::unique_ptr<concurrency::EventLoopBase<>> bool is_ssl_;
 	std::string ssl_cert_path_;
 	std::string ssl_priv_path_;
 };
+
+HTTPMux::HTTPMux(const std::string &listen_address, std::uint16_t port) {}
+
 } // namespace blueth::http
