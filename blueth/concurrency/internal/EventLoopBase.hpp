@@ -131,7 +131,8 @@ template <typename PeerState> class EventLoopBase {
 	 * @return Total number of bytes written
 	 */
 	virtual int writeToPeer(
-	    PeerStateHolder *peer_state_holder, std::shared_ptr<io::IOBuffer<char>> io_buffer) noexcept(false) = 0;
+	    PeerStateHolder *peer_state_holder,
+	    std::shared_ptr<io::IOBuffer<char>> io_buffer) noexcept(false) = 0;
 	/**
 	 * Read raw from the wire sent by the remote peer and store it in-place
 	 * into the io_buffer. There is zero-copy involved from reading from the
@@ -150,7 +151,8 @@ template <typename PeerState> class EventLoopBase {
 	 * @return Total number of bytes read from the remote peer
 	 */
 	virtual int readFromPeer(
-	    PeerStateHolder *peer_state_holder, std::shared_ptr<io::IOBuffer<char>> io_buffer) noexcept(false) = 0;
+	    PeerStateHolder *peer_state_holder,
+	    std::shared_ptr<io::IOBuffer<char>> io_buffer) noexcept(false) = 0;
 	virtual ~EventLoopBase() = default;
 
       protected:
